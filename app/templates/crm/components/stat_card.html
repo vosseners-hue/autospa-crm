@@ -1,0 +1,5 @@
+<div class="stat-card {% if accent %}accent{% endif %}">
+  <span>{{ label }}</span>
+  <strong>{{ value|default:"—" }}</strong>
+  {% if caption %}<small>{{ caption }}</small>{% endif %}
+</div>

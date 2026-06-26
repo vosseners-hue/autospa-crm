@@ -1,0 +1,26 @@
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-main">AUTO SPA</div>
+    <div class="brand-sub">DETAILING CRM</div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Главная</a>
+    <a class="nav-link {% if request.path|slice:':11' == '/reception/' %}active{% endif %}" href="/reception/">Прием авто</a>
+    <a class="nav-link {% if request.path|slice:':9' == '/booking/' %}active{% endif %}" href="/booking/">Запись</a>
+    <a class="nav-link {% if request.path|slice:':8' == '/orders/' %}active{% endif %}" href="/orders/">Заказ-наряды</a>
+    <a class="nav-link {% if request.path|slice:':11' == '/inventory/' %}active{% endif %}" href="/inventory/">Склад</a>
+    <a class="nav-link {% if request.path|slice:':6' == '/cars/' %}active{% endif %}" href="/cars/">Автомобили</a>
+    <a class="nav-link {% if request.path|slice:':10' == '/services/' %}active{% endif %}" href="/services/">Услуги</a>
+    <a class="nav-link {% if request.path|slice:':17' == '/stock-movements/' %}active{% endif %}" href="/stock-movements/">Движения склада</a>
+    <a class="nav-link {% if request.path|slice:':7' == '/admin/' %}active{% endif %}" href="/admin/">Админка</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-dot">A</div>
+    <div>
+      <div class="user-title">Администратор</div>
+      <div class="user-mail">Auto Spa Detailing</div>
+    </div>
+  </div>
+</aside>
