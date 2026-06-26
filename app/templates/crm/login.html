@@ -1,0 +1,12 @@
+{% extends "crm/base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<div class="panel login-panel">
+  <h2>Вход в Auto Spa CRM</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="btn primary" type="submit">Войти</button>
+  </form>
+</div>
+{% endblock %}

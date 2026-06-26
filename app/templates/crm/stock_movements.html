@@ -1,0 +1,31 @@
+{% extends "crm/base.html" %}
+{% block title %}Движения склада{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>Последние движения материалов</h2>
+    <a class="btn primary" href="/stock-movements/add/">+ Добавить движение</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Дата</th><th>Материал</th><th>Количество</th><th>Цена ед.</th><th>Сумма</th><th>Заказ</th><th>Комментарий</th><th></th></tr></thead>
+      <tbody>
+        {% for m in movements %}
+        <tr>
+          <td>{{ m.created_at|date:"d.m.Y H:i" }}</td>
+          <td><strong>{{ m.material.name }}</strong></td>
+          <td class="{% if m.qty < 0 %}orange{% else %}green{% endif %}">{{ m.qty }} {{ m.material.get_unit_display }}</td>
+          <td>{{ m.unit_cost }} ₽</td>
+          <td>{{ m.total_cost }} ₽</td>
+          <td>{% if m.order %}<a class="mini-btn" href="/orders/{{ m.order.id }}/">{{ m.order.number }}</a>{% else %}—{% endif %}</td>
+          <td><small>{{ m.comment|default:"—" }}</small></td>
+          <td><a class="mini-btn" href="/stock-movements/add/">Изменить</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty">Движений пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

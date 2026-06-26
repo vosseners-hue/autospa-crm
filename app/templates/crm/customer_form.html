@@ -1,0 +1,54 @@
+{% extends 'crm/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>{{ title }}</h2>
+      <p class="muted">Сразу добавь клиента и его первый автомобиль. Авто автоматически привяжется к клиенту.</p>
+    </div>
+    <a class="btn ghost" href="{% url back_url %}">← Назад</a>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="form-section">
+      <h3>Клиент</h3>
+      <div class="form-grid">
+        {% for field in form %}
+          {% if field.name == 'name' or field.name == 'phone' or field.name == 'messenger' or field.name == 'source' or field.name == 'notes' %}
+            <div class="form-row">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {{ field.errors }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-section" style="margin-top:18px">
+      <h3>Автомобиль клиента</h3>
+      <p class="muted">Можно оставить пустым и добавить автомобиль позже.</p>
+      <div class="form-grid">
+        {% for field in form %}
+          {% if field.name == 'car_brand' or field.name == 'car_model' or field.name == 'car_year' or field.name == 'car_plate' or field.name == 'car_vin' or field.name == 'car_color' %}
+            <div class="form-row">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {{ field.errors }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="top-actions" style="margin-top:18px">
+      <button class="btn primary" type="submit">{{ submit_label }}</button>
+      <a class="btn ghost" href="{% url back_url %}">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

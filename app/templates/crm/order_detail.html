@@ -1,0 +1,78 @@
+{% extends "crm/base.html" %}
+{% block title %}Заказ-наряд {{ order.number }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Заказ-наряд {{ order.number }}</h2>
+      <p class="muted">{{ order.date_in|date:"d.m.Y H:i" }} · {{ order.get_status_display }}</p>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="/orders/">Назад</a>
+      <a class="btn ghost" href="/orders/{{ order.id }}/edit/">Редактировать</a>
+      <a class="btn" target="_blank" href="/orders/{{ order.id }}/print/">Печать</a>
+      {% if not order.materials_written_off %}
+      <a class="btn danger" href="/orders/{{ order.id }}/writeoff/">Списать материалы</a>
+      {% endif %}
+      {% if order.status != 'done' %}
+      <a class="btn success" href="/orders/{{ order.id }}/close/">Выдать авто</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="detail-grid big">
+    <div><span>Клиент</span><strong>{{ order.customer.name }}</strong><em>{{ order.customer.phone }}</em></div>
+    <div><span>Автомобиль</span><strong>{{ order.car.brand }} {{ order.car.model }}</strong><em>{{ order.car.plate }} · {{ order.car.vin }}</em></div>
+    <div><span>План выдачи</span><strong>{% if order.planned_out %}{{ order.planned_out|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></div>
+    <div><span>Статус склада</span><strong>{% if order.materials_written_off %}Списано{% else %}Не списано{% endif %}</strong></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-head"><h3>Работы</h3></div>
+    <table class="data-table">
+      <thead><tr><th>Услуга</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead>
+      <tbody>
+      {% for item in order.items.all %}
+        <tr>
+          <td>{{ item.service.name }}</td>
+          <td>{{ item.qty }}</td>
+          <td>{{ item.price }} ₽</td>
+          <td><strong>{{ item.total }} ₽</strong></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="muted">Работы не добавлены</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="totals">
+      <div><span>Работы</span><strong>{{ order.subtotal }} ₽</strong></div>
+      <div><span>Скидка</span><strong>{{ order.discount }} ₽</strong></div>
+      <div class="total"><span>Итого</span><strong>{{ order.total }} ₽</strong></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h3>Себестоимость</h3></div>
+    <div class="stats-row vertical">
+      <div class="stat"><span>Материалы</span><strong>{{ order.material_cost }} ₽</strong></div>
+      <div class="stat"><span>Прибыль по заказу</span><strong>{{ order.profit }} ₽</strong></div>
+    </div>
+    <table class="data-table compact">
+      <thead><tr><th>Материал</th><th>Кол-во</th><th>Сумма</th></tr></thead>
+      <tbody>
+      {% for m in order.movements.all %}
+        <tr><td>{{ m.material.name }}</td><td>{{ m.qty }}</td><td>{{ m.total_cost }} ₽</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="muted">Списаний пока нет</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if order.notes %}
+<div class="panel"><h3>Комментарий</h3><p>{{ order.notes }}</p></div>
+{% endif %}
+{% endblock %}

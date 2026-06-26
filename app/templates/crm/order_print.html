@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Заказ-наряд {{ order.number }}</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Arial,sans-serif;color:#111;margin:0;background:#eee}.page{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:18mm} .top{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:18px}.brand h1{margin:0;font-size:24px;letter-spacing:.5px}.brand p{margin:4px 0;color:#555}.doc{text-align:right}.doc h2{margin:0;font-size:22px}.muted{color:#666}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}.box{border:1px solid #ddd;border-radius:10px;padding:12px}.box span{display:block;font-size:12px;color:#777;margin-bottom:5px}.box strong{font-size:16px} table{width:100%;border-collapse:collapse;margin-top:16px} th{background:#111;color:#fff;text-align:left;padding:10px}td{border-bottom:1px solid #ddd;padding:10px}.right{text-align:right}.summary{margin-left:auto;margin-top:18px;width:75mm}.summary div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #ddd}.summary .total{font-size:20px;font-weight:bold;border-bottom:2px solid #111}.sign{display:grid;grid-template-columns:1fr 1fr;gap:25mm;margin-top:35mm}.line{border-top:1px solid #111;padding-top:8px}.actions{position:fixed;top:15px;right:15px}.btn{background:#111;color:#fff;text-decoration:none;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}@media print{body{background:#fff}.page{margin:0;width:auto;min-height:auto}.actions{display:none}}
+</style>
+</head>
+<body>
+<div class="actions"><button class="btn" onclick="window.print()">Печать</button></div>
+<div class="page">
+  <div class="top">
+    <div class="brand"><h1>AUTO SPA DETAILING</h1><p>Детейлинг-центр</p></div>
+    <div class="doc"><h2>Заказ-наряд</h2><p>№ {{ order.number }}</p><p class="muted">{{ order.date_in|date:"d.m.Y H:i" }}</p></div>
+  </div>
+  <div class="grid">
+    <div class="box"><span>Клиент</span><strong>{{ order.customer.name }}</strong><p>{{ order.customer.phone }}</p></div>
+    <div class="box"><span>Автомобиль</span><strong>{{ order.car.brand }} {{ order.car.model }}</strong><p>{{ order.car.plate }} {% if order.car.vin %}· VIN: {{ order.car.vin }}{% endif %}</p></div>
+    <div class="box"><span>Статус</span><strong>{{ order.get_status_display }}</strong></div>
+    <div class="box"><span>План выдачи</span><strong>{% if order.planned_out %}{{ order.planned_out|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></div>
+  </div>
+  <table>
+    <thead><tr><th>Работа</th><th class="right">Кол-во</th><th class="right">Цена</th><th class="right">Сумма</th></tr></thead>
+    <tbody>
+    {% for item in order.items.all %}
+      <tr><td>{{ item.service.name }}</td><td class="right">{{ item.qty }}</td><td class="right">{{ item.price }} ₽</td><td class="right">{{ item.total }} ₽</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="summary">
+    <div><span>Работы</span><strong>{{ order.subtotal }} ₽</strong></div>
+    <div><span>Скидка</span><strong>{{ order.discount }} ₽</strong></div>
+    <div class="total"><span>Итого</span><strong>{{ order.total }} ₽</strong></div>
+  </div>
+  {% if order.notes %}<div class="box" style="margin-top:20px"><span>Комментарий</span>{{ order.notes }}</div>{% endif %}
+  <div class="sign"><div class="line">Подпись клиента</div><div class="line">Подпись приемщика</div></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "crm/base.html" %}
+{% block title %}Услуги{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card"><span>Услуг</span><strong>{{ services|length }}</strong><small>в прайсе</small></div>
+  <div class="stat-card accent"><span>Нормы</span><strong>Склад</strong><small>расход материалов по услугам</small></div>
+</section>
+<div class="panel">
+  <div class="panel-head">
+    <h2>Прайс услуг</h2>
+    <a class="btn primary" href="/services/add/">+ Добавить услугу</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Услуга</th><th>Цена</th><th>Описание</th><th>Активна</th><th>Норм расхода</th><th></th></tr></thead>
+      <tbody>
+        {% for s in services %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td class="green">{{ s.price }} ₽</td>
+          <td><small>{{ s.description|default:"—" }}</small></td>
+          <td>{% if s.active %}<span class="badge">Да</span>{% else %}<span class="orange">Нет</span>{% endif %}</td>
+          <td>{{ s.norms.count }}</td>
+          <td><a class="mini-btn" href="/services/{{ s.id }}/edit/">Изменить</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">Услуг пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

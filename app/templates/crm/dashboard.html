@@ -1,0 +1,52 @@
+{% extends "crm/base.html" %}
+{% block title %}Главная панель{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card">
+    <span>Клиентов</span>
+    <strong>{{ customers_count|default:"—" }}</strong>
+    <small>в базе</small>
+  </div>
+  <div class="stat-card">
+    <span>Автомобилей</span>
+    <strong>{{ cars_count|default:"—" }}</strong>
+    <small>прикреплено</small>
+  </div>
+  <div class="stat-card">
+    <span>Заказ-нарядов</span>
+    <strong>{{ orders_count|default:"—" }}</strong>
+    <small>всего</small>
+  </div>
+  <div class="stat-card accent">
+    <span>Склад</span>
+    <strong>{{ materials_count|default:"—" }}</strong>
+    <small>материалов</small>
+  </div>
+</section>
+
+<section class="grid-two">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Быстрые действия</h2>
+    </div>
+    <div class="quick-actions">
+      <a href="/customers/add/">+ Добавить клиента</a>
+      <a href="/cars/add/">+ Добавить автомобиль</a>
+      <a href="/orders/add/">+ Новый заказ-наряд</a>
+      <a href="/inventory/add/">+ Добавить материал</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Логика работы</h2>
+    </div>
+    <div class="timeline">
+      <div>1. Создаем клиента и автомобиль</div>
+      <div>2. Открываем заказ-наряд</div>
+      <div>3. Добавляем услуги и стоимость</div>
+      <div>4. Закрываем заказ и списываем материалы</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'crm/base.html' %}
+{% load json_script %}
+{% block title %}{{ title }}
+  <script id="cars-data" type="application/json">{{ cars_json|safe }}</script>
+  <script>
+    (function () {
+      const customerSelect = document.getElementById('id_customer');
+      const carSelect = document.getElementById('id_car');
+      const carsDataEl = document.getElementById('cars-data');
+      if (!customerSelect || !carSelect || !carsDataEl) return;
+      const cars = JSON.parse(carsDataEl.textContent || '[]');
+      const selectedCar = carSelect.value;
+
+      function rebuildCars() {
+        const customerId = customerSelect.value;
+        const oldValue = carSelect.value || selectedCar;
+        carSelect.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
+        carSelect.appendChild(empty);
+
+        cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
+          const option = document.createElement('option');
+          option.value = car.id;
+          option.textContent = car.title;
+          if (String(car.id) === String(oldValue)) option.selected = true;
+          carSelect.appendChild(option);
+        });
+      }
+
+      customerSelect.addEventListener('change', rebuildCars);
+      rebuildCars();
+    })();
+  </script>
+{% endblock %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  <div class="panel">
+    <div class="panel-head">
+      <h2>Данные заказ-наряда</h2>
+      <a class="btn ghost" href="{% url 'orders' %}">← Назад</a>
+    </div>
+    {{ form.non_field_errors }}
+    <div class="form-grid">
+      {% for field in form %}
+        <div class="form-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Работы / услуги</h2><span class="badge">можно добавить несколько строк</span></div>
+    {{ formset.management_form }}
+    {% for f in formset %}
+      <div class="formset-row">
+        {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+        <div>
+          <label>{{ f.service.label }}</label>
+          {{ f.service }}{{ f.service.errors }}
+        </div>
+        <div>
+          <label>{{ f.qty.label }}</label>
+          {{ f.qty }}{{ f.qty.errors }}
+        </div>
+        <div>
+          <label>{{ f.price.label }}</label>
+          {{ f.price }}{{ f.price.errors }}
+        </div>
+        {% if f.DELETE %}
+          <div class="checkbox-line"><label>Удалить</label>{{ f.DELETE }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <div class="top-actions">
+      <button class="btn primary" type="submit">Сохранить заказ</button>
+      <a class="btn ghost" href="{% url 'orders' %}">Отмена</a>
+    </div>
+  </div>
+</form>
+
+  <script id="cars-data" type="application/json">{{ cars_json|safe }}</script>
+  <script>
+    (function () {
+      const customerSelect = document.getElementById('id_customer');
+      const carSelect = document.getElementById('id_car');
+      const carsDataEl = document.getElementById('cars-data');
+      if (!customerSelect || !carSelect || !carsDataEl) return;
+      const cars = JSON.parse(carsDataEl.textContent || '[]');
+      const selectedCar = carSelect.value;
+
+      function rebuildCars() {
+        const customerId = customerSelect.value;
+        const oldValue = carSelect.value || selectedCar;
+        carSelect.innerHTML = '';
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
+        carSelect.appendChild(empty);
+
+        cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
+          const option = document.createElement('option');
+          option.value = car.id;
+          option.textContent = car.title;
+          if (String(car.id) === String(oldValue)) option.selected = true;
+          carSelect.appendChild(option);
+        });
+      }
+
+      customerSelect.addEventListener('change', rebuildCars);
+      rebuildCars();
+    })();
+  </script>
+{% endblock %}

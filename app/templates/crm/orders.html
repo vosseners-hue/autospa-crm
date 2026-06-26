@@ -1,0 +1,15 @@
+{% extends "crm/base.html" %}
+{% block title %}Заказ-наряды{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head"><h2>Заказы в работе</h2><a class="btn primary" href="/orders/add/">+ Новый заказ-наряд</a></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>№</th><th>Клиент / авто</th><th>Статус</th><th>Дата приема</th><th>Сумма</th><th>Списание</th><th></th></tr></thead>
+    <tbody>
+      {% for o in orders %}
+      <tr><td><strong>{{ o.number }}</strong></td><td>{{ o.customer.name }}<br><small>{{ o.car }}</small></td><td><span class="badge">{{ o.get_status_display }}</span></td><td>{{ o.date_in|date:"d.m.Y H:i" }}</td><td><strong>{{ o.total }} ₽</strong></td><td>{% if o.materials_written_off %}<span class="green">Списано</span>{% else %}<span class="orange">Нет</span>{% endif %}</td><td><a class="mini-btn" href="/orders/{{ o.id }}/">Открыть</a></td></tr>
+      {% empty %}<tr><td colspan="7" class="empty">Заказ-нарядов пока нет</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "crm/base.html" %}
+{% block title %}Склад / Материалы{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card">
+    <span>Материалов</span>
+    <strong>{{ materials|length }}</strong>
+    <small>наименований</small>
+  </div>
+  <div class="stat-card accent">
+    <span>Контроль</span>
+    <strong>MIN</strong>
+    <small>минимальные остатки</small>
+  </div>
+</section>
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>Материалы</h2>
+    <a class="btn primary" href="/inventory/add/">+ Добавить материал</a>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Материал</th>
+          <th>Остаток</th>
+          <th>Ед. изм.</th>
+          <th>Себестоимость</th>
+          <th>Мин. остаток</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in materials %}
+        <tr>
+          <td><strong>{{ m.name }}</strong></td>
+          <td class="green">{{ m.stock }}</td>
+          <td>{{ m.unit }}</td>
+          <td>{{ m.cost }} ₽</td>
+          <td class="orange">{{ m.min_stock }}</td>
+          <td><a class="mini-btn" href="/inventory/{{ m.id }}/edit/">Изменить</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">Материалов пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
