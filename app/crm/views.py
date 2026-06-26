@@ -164,15 +164,31 @@ def booking_create_order(request, pk):
 
 @login_required
 def dashboard(request):
+    today = timezone.localdate()
+    today_orders_qs = WorkOrder.objects.filter(date_in__date=today).select_related('customer', 'car').prefetch_related('items__service')
+    active_orders_qs = WorkOrder.objects.exclude(status__in=['done', 'cancel']).select_related('customer', 'car')
+    ready_orders_qs = WorkOrder.objects.filter(status='ready').select_related('customer', 'car')
+    done_today_qs = WorkOrder.objects.filter(status='done', date_in__date=today).prefetch_related('items')
+    upcoming_bookings_qs = Booking.objects.filter(start_at__date=today).select_related('customer', 'car', 'service', 'order').order_by('start_at')
+    low_materials = [m for m in Material.objects.all().order_by('name') if m.stock <= m.min_stock]
+
     return render(request, 'crm/dashboard.html', {
+        'today': today,
         'orders_count': WorkOrder.objects.count(),
         'customers_count': Customer.objects.count(),
         'cars_count': Car.objects.count(),
         'materials_count': Material.objects.count(),
-        'active_orders': WorkOrder.objects.exclude(status__in=['done', 'cancel']).count(),
-        'revenue': sum([o.total for o in WorkOrder.objects.filter(status='done')]),
-        'orders': WorkOrder.objects.select_related('customer', 'car').order_by('-date_in')[:10],
-        'low_materials': [m for m in Material.objects.all() if m.stock <= m.min_stock],
+        'today_orders_count': today_orders_qs.count(),
+        'active_orders': active_orders_qs.count(),
+        'ready_orders': ready_orders_qs.count(),
+        'revenue_today': sum([o.total for o in done_today_qs]),
+        'revenue_total': sum([o.total for o in WorkOrder.objects.filter(status='done')]),
+        'average_check_today': (sum([o.total for o in done_today_qs]) / done_today_qs.count()) if done_today_qs.count() else 0,
+        'recent_orders': WorkOrder.objects.select_related('customer', 'car').prefetch_related('items__service').order_by('-date_in')[:8],
+        'today_orders': today_orders_qs.order_by('-date_in')[:8],
+        'today_bookings': upcoming_bookings_qs[:8],
+        'low_materials': low_materials[:8],
+        'low_materials_count': len(low_materials),
     })
 
 @login_required

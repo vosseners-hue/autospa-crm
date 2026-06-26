@@ -1,36 +1,126 @@
 {% extends "crm/base.html" %}
 {% block title %}Главная панель{% endblock %}
 {% block content %}
-<section class="stats-grid">
-  {% include "crm/components/stat_card.html" with label="Клиентов" value=customers_count caption="в базе" %}
-  {% include "crm/components/stat_card.html" with label="Автомобилей" value=cars_count caption="прикреплено" %}
-  {% include "crm/components/stat_card.html" with label="Заказ-нарядов" value=orders_count caption="всего" %}
-  {% include "crm/components/stat_card.html" with label="Склад" value=materials_count caption="материалов" accent=True %}
+<section class="hero-dashboard panel">
+  <div>
+    <div class="eyebrow">Сегодня • {{ today|date:"d.m.Y" }}</div>
+    <h2>Панель управления Auto Spa</h2>
+    <p>Быстрый обзор загрузки, заказ-нарядов, записей и склада.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="btn ghost" href="/reception/">Открыть прием авто</a>
+    <a class="btn primary" href="/orders/add/">+ Новый заказ-наряд</a>
+  </div>
 </section>
 
-<section class="grid-two">
+<section class="stats-grid dashboard-stats">
+  {% include "crm/components/stat_card.html" with label="Выручка сегодня" value=revenue_today caption="по выданным заказам" accent=True %}
+  {% include "crm/components/stat_card.html" with label="Заказов сегодня" value=today_orders_count caption="создано за день" %}
+  {% include "crm/components/stat_card.html" with label="Авто в работе" value=active_orders caption="активные заказы" %}
+  {% include "crm/components/stat_card.html" with label="Готово к выдаче" value=ready_orders caption="ожидают клиента" %}
+</section>
+
+<section class="grid-two dashboard-grid">
   <div class="panel">
-    <div class="panel-head">
-      <h2>Быстрые действия</h2>
-    </div>
-    <div class="quick-actions">
-      <a href="/customers/add/">+ Добавить клиента</a>
-      <a href="/cars/add/">+ Добавить автомобиль</a>
-      <a href="/orders/add/">+ Новый заказ-наряд</a>
-      <a href="/inventory/add/">+ Добавить материал</a>
-    </div>
+    {% include "crm/components/panel_head.html" with title="Записи на сегодня" action_url="/booking/" action_label="Все записи" %}
+    {% if today_bookings %}
+      <div class="list-stack">
+        {% for booking in today_bookings %}
+          <div class="dash-row">
+            <div class="dash-time">{{ booking.start_at|date:"H:i" }}</div>
+            <div class="dash-main">
+              <strong>{{ booking.car.brand }} {{ booking.car.model }}</strong>
+              <span>{{ booking.customer.name }}{% if booking.service %} • {{ booking.service.name }}{% endif %}</span>
+            </div>
+            <span class="badge">{{ booking.get_status_display }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty compact">На сегодня записей нет</div>
+    {% endif %}
   </div>
 
   <div class="panel">
-    <div class="panel-head">
-      <h2>Логика работы</h2>
+    {% include "crm/components/panel_head.html" with title="Заказы сегодня" action_url="/orders/" action_label="Все заказы" %}
+    {% if today_orders %}
+      <div class="list-stack">
+        {% for order in today_orders %}
+          <a class="dash-row link-row" href="/orders/{{ order.pk }}/">
+            <div class="dash-time">{{ order.date_in|date:"H:i" }}</div>
+            <div class="dash-main">
+              <strong>{{ order.number }} • {{ order.car.brand }} {{ order.car.model }}</strong>
+              <span>{{ order.customer.name }} • {{ order.total }} ₽</span>
+            </div>
+            <span class="badge">{{ order.get_status_display }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty compact">Сегодня заказ-нарядов еще нет</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="grid-two dashboard-grid">
+  <div class="panel">
+    {% include "crm/components/panel_head.html" with title="Последние заказ-наряды" action_url="/orders/add/" action_label="+ Создать" %}
+    {% if recent_orders %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Номер</th><th>Клиент / авто</th><th>Статус</th><th>Сумма</th></tr>
+          </thead>
+          <tbody>
+            {% for order in recent_orders %}
+              <tr>
+                <td><a class="green" href="/orders/{{ order.pk }}/">{{ order.number }}</a></td>
+                <td>{{ order.customer.name }}<br><small>{{ order.car.brand }} {{ order.car.model }}{% if order.car.plate %} • {{ order.car.plate }}{% endif %}</small></td>
+                <td><span class="badge">{{ order.get_status_display }}</span></td>
+                <td>{{ order.total }} ₽</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty compact">Заказ-нарядов пока нет</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    {% include "crm/components/panel_head.html" with title="Контроль склада" action_url="/inventory/" action_label="Склад" %}
+    <div class="mini-stats">
+      <div><span>Материалов</span><strong>{{ materials_count }}</strong></div>
+      <div><span>Ниже минимума</span><strong class="orange">{{ low_materials_count }}</strong></div>
+      <div><span>Всего клиентов</span><strong>{{ customers_count }}</strong></div>
+      <div><span>Автомобилей</span><strong>{{ cars_count }}</strong></div>
     </div>
-    <div class="timeline">
-      <div>1. Создаем клиента и автомобиль</div>
-      <div>2. Открываем заказ-наряд</div>
-      <div>3. Добавляем услуги и стоимость</div>
-      <div>4. Закрываем заказ и списываем материалы</div>
-    </div>
+    {% if low_materials %}
+      <div class="list-stack stock-warning-list">
+        {% for material in low_materials %}
+          <div class="dash-row">
+            <div class="dash-main">
+              <strong>{{ material.name }}</strong>
+              <span>Остаток: {{ material.stock }} {{ material.get_unit_display }} • минимум: {{ material.min_stock }}</span>
+            </div>
+            <span class="badge danger-soft">Закупить</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty compact">Критичных остатков нет</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  {% include "crm/components/panel_head.html" with title="Быстрые действия" %}
+  <div class="quick-actions dashboard-actions">
+    <a href="/customers/add/">+ Добавить клиента</a>
+    <a href="/cars/add/">+ Добавить автомобиль</a>
+    <a href="/booking/add/">+ Новая запись</a>
+    <a href="/inventory/add/">+ Добавить материал</a>
   </div>
 </section>
 {% endblock %}
