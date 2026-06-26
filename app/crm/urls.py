@@ -6,6 +6,12 @@ urlpatterns = [
     path('reception/', views.reception, name='reception'),
     path('reception/create-order/', views.reception_create_order, name='reception_create_order'),
 
+    path('booking/', views.booking, name='booking'),
+    path('booking/add/', views.booking_create, name='booking_create'),
+    path('booking/<int:pk>/edit/', views.booking_update, name='booking_update'),
+    path('booking/<int:pk>/delete/', views.booking_delete, name='booking_delete'),
+    path('booking/<int:pk>/create-order/', views.booking_create_order, name='booking_create_order'),
+
     path('customers/', views.customers, name='customers'),
     path('customers/add/', views.customer_create, name='customer_create'),
     path('customers/<int:pk>/', views.customer_detail, name='customer_detail'),

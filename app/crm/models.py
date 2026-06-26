@@ -103,3 +103,20 @@ class StockMovement(models.Model):
     @property
     def total_cost(self): return abs(self.qty)*self.unit_cost
     def __str__(self): return f'{self.material} {self.qty}'
+
+
+class Booking(models.Model):
+    STATUS=[('planned','Запланировано'),('arrived','Приехал'),('work','В работе'),('ready','Готово'),('done','Завершено'),('cancel','Отменено')]
+    customer=models.ForeignKey(Customer,on_delete=models.PROTECT, verbose_name='Клиент')
+    car=models.ForeignKey(Car,on_delete=models.PROTECT, verbose_name='Автомобиль')
+    service=models.ForeignKey(Service,on_delete=models.SET_NULL,null=True,blank=True, verbose_name='Услуга')
+    start_at=models.DateTimeField('Дата и время записи')
+    duration_minutes=models.PositiveIntegerField('Длительность, минут', default=180)
+    status=models.CharField('Статус', max_length=20, choices=STATUS, default='planned')
+    notes=models.TextField('Комментарий', blank=True)
+    order=models.OneToOneField(WorkOrder,on_delete=models.SET_NULL,null=True,blank=True, related_name='booking', verbose_name='Заказ-наряд')
+    created_at=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering=['start_at']
+    def __str__(self):
+        return f'{self.start_at:%d.%m.%Y %H:%M} — {self.customer} — {self.car}'

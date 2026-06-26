@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Customer, Car, Service, Material, StockMovement, WorkOrder, WorkOrderItem
+from .models import Customer, Car, Service, Material, StockMovement, WorkOrder, WorkOrderItem, Booking
 
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -83,6 +83,24 @@ class StockMovementForm(StyledModelForm):
         model = StockMovement
         fields = ['material', 'qty', 'unit_cost', 'comment']
         help_texts = {'qty': 'Для прихода укажите положительное число, для списания — отрицательное.'}
+
+
+class BookingForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['customer'].queryset = Customer.objects.order_by('name')
+        self.fields['car'].queryset = Car.objects.select_related('customer').order_by('brand', 'model', 'plate')
+        self.fields['service'].queryset = Service.objects.filter(active=True).order_by('name')
+        self.fields['customer'].label = 'Клиент'
+        self.fields['car'].label = 'Автомобиль клиента'
+
+    class Meta:
+        model = Booking
+        fields = ['customer', 'car', 'service', 'start_at', 'duration_minutes', 'status', 'notes']
+        widgets = {
+            'start_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'notes': forms.Textarea(attrs={'rows': 4}),
+        }
 
 class WorkOrderForm(StyledModelForm):
     def __init__(self, *args, **kwargs):

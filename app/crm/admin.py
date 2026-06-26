@@ -15,3 +15,9 @@ class WorkOrderItemInline(admin.TabularInline): model=WorkOrderItem; extra=1
 class WorkOrderAdmin(admin.ModelAdmin): list_display=('number','customer','car','status','date_in','total','materials_written_off'); inlines=[WorkOrderItemInline]; readonly_fields=('number','materials_written_off')
 @admin.register(StockMovement)
 class StockMovementAdmin(admin.ModelAdmin): list_display=('material','qty','unit_cost','order','created_at')
+
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    list_display=('start_at','customer','car','service','status','order')
+    list_filter=('status','start_at')
+    search_fields=('customer__name','customer__phone','car__brand','car__model','car__plate','car__vin')

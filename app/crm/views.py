@@ -7,7 +7,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from .models import *
-from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet
+from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet, BookingForm
 
 
 def _money(value):
@@ -67,6 +67,96 @@ def reception_create_order(request):
         )
 
     messages.success(request, f'Заказ-наряд {order.number} создан из экрана приема')
+    return redirect('order_detail', pk=order.pk)
+
+
+@login_required
+def booking(request):
+    day = (request.GET.get('day') or '').strip()
+    bookings_qs = Booking.objects.select_related('customer', 'car', 'service', 'order').order_by('start_at')
+    if day:
+        bookings_qs = bookings_qs.filter(start_at__date=day)
+    else:
+        bookings_qs = bookings_qs.order_by('start_at')[:80]
+    return render(request, 'crm/booking.html', {
+        'bookings': bookings_qs,
+        'day': day,
+        'customers': Customer.objects.order_by('name'),
+        'cars_json': _cars_for_order_json(),
+    })
+
+@login_required
+def booking_create(request):
+    instance = Booking()
+    customer_id = request.GET.get('customer')
+    car_id = request.GET.get('car')
+    if customer_id:
+        try:
+            instance.customer = Customer.objects.get(pk=customer_id)
+        except Customer.DoesNotExist:
+            pass
+    if car_id:
+        try:
+            instance.car = Car.objects.get(pk=car_id)
+            instance.customer = instance.car.customer
+        except Car.DoesNotExist:
+            pass
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=instance)
+        if form.is_valid():
+            booking_obj = form.save()
+            messages.success(request, 'Запись создана')
+            return redirect('booking')
+    else:
+        form = BookingForm(instance=instance)
+    return render(request, 'crm/booking_form.html', {
+        'form': form,
+        'title': 'Новая запись',
+        'back_url': 'booking',
+        'submit_label': 'Сохранить запись',
+        'cars_json': _cars_for_order_json(),
+    })
+
+@login_required
+def booking_update(request, pk):
+    booking_obj = get_object_or_404(Booking, pk=pk)
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=booking_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Запись обновлена')
+            return redirect('booking')
+    else:
+        form = BookingForm(instance=booking_obj)
+    return render(request, 'crm/booking_form.html', {
+        'form': form,
+        'title': 'Редактирование записи',
+        'back_url': 'booking',
+        'submit_label': 'Сохранить запись',
+        'cars_json': _cars_for_order_json(),
+    })
+
+@login_required
+def booking_delete(request, pk):
+    return _delete_view(request, get_object_or_404(Booking, pk=pk), 'booking')
+
+@login_required
+def booking_create_order(request, pk):
+    booking_obj = get_object_or_404(Booking.objects.select_related('customer', 'car', 'service'), pk=pk)
+    if booking_obj.order_id:
+        return redirect('order_detail', pk=booking_obj.order_id)
+    order = WorkOrder.objects.create(
+        customer=booking_obj.customer,
+        car=booking_obj.car,
+        planned_out=booking_obj.start_at,
+        notes=booking_obj.notes,
+    )
+    if booking_obj.service_id:
+        WorkOrderItem.objects.create(order=order, service=booking_obj.service, qty=1, price=booking_obj.service.price)
+    booking_obj.order = order
+    booking_obj.status = 'arrived'
+    booking_obj.save(update_fields=['order', 'status'])
+    messages.success(request, f'Создан заказ-наряд {order.number} из записи')
     return redirect('order_detail', pk=order.pk)
 
 @login_required

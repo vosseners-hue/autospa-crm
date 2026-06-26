@@ -1,0 +1,58 @@
+{% extends 'crm/base.html' %}
+{% block title %}Календарь записи{% endblock %}
+{% block content %}
+<div class="search-hero">
+  <form method="get" class="search-row">
+    <input class="search-input" type="date" name="day" value="{{ day }}">
+    <button class="btn primary" type="submit">Показать день</button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Записи клиентов</h2>
+      <div class="muted">План работ по датам, автомобилям и услугам</div>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="{% url 'booking' %}">Все записи</a>
+      <a class="btn primary" href="{% url 'booking_create' %}">+ Новая запись</a>
+    </div>
+  </div>
+
+  {% if bookings %}
+    <div class="booking-board">
+      {% for b in bookings %}
+        <div class="booking-card">
+          <div class="booking-time">
+            <strong>{{ b.start_at|date:'H:i' }}</strong>
+            <span>{{ b.start_at|date:'d.m.Y' }}</span>
+          </div>
+          <div class="booking-info">
+            <h3>{{ b.customer.name }}</h3>
+            <div class="booking-meta">
+              <span>🚗 {{ b.car.brand }} {{ b.car.model }}</span>
+              <span>{{ b.car.plate|default:'без номера' }}</span>
+              <span>{{ b.get_status_display }}</span>
+            </div>
+            {% if b.service %}<div class="service-chip">{{ b.service.name }}</div>{% endif %}
+            {% if b.notes %}<p class="muted">{{ b.notes }}</p>{% endif %}
+            <div class="card-actions">
+              {% if b.order %}
+                <a class="mini-btn" href="{% url 'order_detail' b.order.pk %}">Заказ-наряд</a>
+              {% else %}
+                <a class="mini-btn" href="{% url 'booking_create_order' b.pk %}">Создать заказ</a>
+              {% endif %}
+              <a class="mini-btn" href="{% url 'booking_update' b.pk %}">Изменить</a>
+              <a class="mini-btn" href="{% url 'car_detail' b.car.pk %}">Авто</a>
+              <a class="mini-btn danger" href="{% url 'booking_delete' b.pk %}">Удалить</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">Записей пока нет</div>
+  {% endif %}
+</div>
+{% endblock %}
