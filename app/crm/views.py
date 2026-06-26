@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.contrib import messages
+from django.db.models import Q
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -11,6 +12,28 @@ from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, Mate
 
 def _money(value):
     return value or 0
+
+
+@login_required
+def reception(request):
+    q = (request.GET.get('q') or '').strip()
+    customers_qs = Customer.objects.prefetch_related('cars').order_by('-created_at')
+    cars_qs = Car.objects.select_related('customer').order_by('brand', 'model', 'plate')
+    if q:
+        customers_qs = customers_qs.filter(
+            Q(name__icontains=q) | Q(phone__icontains=q) | Q(messenger__icontains=q) | Q(notes__icontains=q)
+        )
+        cars_qs = cars_qs.filter(
+            Q(brand__icontains=q) | Q(model__icontains=q) | Q(plate__icontains=q) | Q(vin__icontains=q) | Q(color__icontains=q) | Q(customer__name__icontains=q) | Q(customer__phone__icontains=q)
+        )
+    recent_orders = WorkOrder.objects.select_related('customer', 'car').prefetch_related('items__service').order_by('-date_in')[:8]
+    return render(request, 'crm/reception.html', {
+        'q': q,
+        'customers': customers_qs[:12],
+        'cars': cars_qs[:18],
+        'recent_orders': recent_orders,
+        'services': Service.objects.filter(active=True).order_by('name')[:12],
+    })
 
 @login_required
 def dashboard(request):

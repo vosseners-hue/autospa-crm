@@ -1,0 +1,118 @@
+{% extends "crm/base.html" %}
+{% block title %}Прием автомобиля{% endblock %}
+{% block content %}
+<section class="search-hero">
+  <div class="crumb">Быстрый рабочий экран приемщика</div>
+  <h2 style="margin:0 0 14px 0;font-size:28px">Найти клиента или автомобиль</h2>
+  <form method="get" class="search-row">
+    <input class="search-input" type="search" name="q" value="{{ q }}" placeholder="Телефон, имя, госномер, VIN, марка или модель">
+    <button class="btn primary" type="submit">Найти</button>
+  </form>
+  <div class="actions" style="margin-top:16px">
+    <a class="btn ghost" href="/customers/add/">+ Новый клиент с авто</a>
+    <a class="btn ghost" href="/cars/add/">+ Добавить авто</a>
+    <a class="btn primary" href="/orders/add/">+ Создать заказ-наряд</a>
+  </div>
+</section>
+
+<div class="grid-2">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Клиенты</h2>
+      <a class="mini-btn" href="/customers/">Все клиенты</a>
+    </div>
+    {% if customers %}
+      <div class="cards-grid">
+        {% for customer in customers %}
+          <div class="item-card">
+            <h3>{{ customer.name }}</h3>
+            <div class="meta-list">
+              <span>Телефон: <b>{{ customer.phone|default:"—" }}</b></span>
+              <span>Мессенджер: {{ customer.messenger|default:"—" }}</span>
+              <span>Авто: {{ customer.cars.count }}</span>
+            </div>
+            <div class="card-actions">
+              <a class="mini-btn" href="/customers/{{ customer.id }}/">Карточка</a>
+              <a class="mini-btn" href="/cars/add/?customer={{ customer.id }}">+ Авто</a>
+              <a class="mini-btn" href="/orders/add/?customer={{ customer.id }}">+ Заказ</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">Клиенты не найдены</div>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Популярные услуги</h2>
+      <a class="mini-btn" href="/services/">Все услуги</a>
+    </div>
+    <div>
+      {% for service in services %}
+        <span class="service-chip">{{ service.name }} · {{ service.price }} ₽</span>
+      {% empty %}
+        <div class="empty">Услуги пока не добавлены</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Автомобили</h2>
+    <a class="mini-btn" href="/cars/">Все автомобили</a>
+  </div>
+  {% if cars %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Автомобиль</th><th>Клиент</th><th>Госномер</th><th>VIN</th><th>Цвет</th><th></th></tr></thead>
+        <tbody>
+          {% for car in cars %}
+          <tr>
+            <td><b>{{ car.brand }} {{ car.model }}</b><br><small>{{ car.year|default:"" }}</small></td>
+            <td>{{ car.customer.name }}<br><small>{{ car.customer.phone|default:"" }}</small></td>
+            <td>{{ car.plate|default:"—" }}</td>
+            <td>{{ car.vin|default:"—" }}</td>
+            <td>{{ car.color|default:"—" }}</td>
+            <td class="actions-cell">
+              <a class="mini-btn" href="/customers/{{ car.customer.id }}/">Клиент</a>
+              <a class="mini-btn" href="/orders/add/?car={{ car.id }}">+ Заказ</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">Автомобили не найдены</div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Последние заказ-наряды</h2>
+    <a class="mini-btn" href="/orders/">Все заказ-наряды</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Номер</th><th>Клиент</th><th>Авто</th><th>Статус</th><th>Сумма</th><th></th></tr></thead>
+      <tbody>
+        {% for order in recent_orders %}
+        <tr>
+          <td><b>{{ order.number }}</b><br><small>{{ order.date_in|date:"d.m.Y H:i" }}</small></td>
+          <td>{{ order.customer.name }}</td>
+          <td>{{ order.car.brand }} {{ order.car.model }}<br><small>{{ order.car.plate }}</small></td>
+          <td><span class="badge">{{ order.get_status_display }}</span></td>
+          <td><b>{{ order.total }} ₽</b></td>
+          <td><a class="mini-btn" href="/orders/{{ order.id }}/">Открыть</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">Заказов пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
