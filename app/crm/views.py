@@ -35,6 +35,40 @@ def reception(request):
         'services': Service.objects.filter(active=True).order_by('name')[:12],
     })
 
+
+
+@login_required
+def reception_create_order(request):
+    if request.method != 'POST':
+        return redirect('reception')
+
+    car_id = request.POST.get('car')
+    service_id = request.POST.get('service')
+    notes = (request.POST.get('notes') or '').strip()
+
+    if not car_id:
+        messages.error(request, 'Выберите автомобиль для создания заказ-наряда')
+        return redirect('reception')
+
+    car = get_object_or_404(Car.objects.select_related('customer'), pk=car_id)
+    order = WorkOrder.objects.create(
+        customer=car.customer,
+        car=car,
+        notes=notes,
+    )
+
+    if service_id:
+        service = get_object_or_404(Service, pk=service_id)
+        WorkOrderItem.objects.create(
+            order=order,
+            service=service,
+            qty=1,
+            price=service.price,
+        )
+
+    messages.success(request, f'Заказ-наряд {order.number} создан из экрана приема')
+    return redirect('order_detail', pk=order.pk)
+
 @login_required
 def dashboard(request):
     return render(request, 'crm/dashboard.html', {

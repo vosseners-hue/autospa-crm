@@ -15,6 +15,50 @@
   </div>
 </section>
 
+<section class="panel">
+  <div class="panel-head">
+    <h2>Быстро создать заказ-наряд</h2>
+    <span class="badge">клиент → авто → услуга</span>
+  </div>
+  <form method="post" action="{% url 'reception_create_order' %}">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="form-row">
+        <label for="quick_customer">Клиент</label>
+        <select class="form-control" id="quick_customer" name="customer">
+          <option value="">Выберите клиента</option>
+          {% for customer in customers %}
+            <option value="{{ customer.id }}">{{ customer.name }}{% if customer.phone %} · {{ customer.phone }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="quick_car">Автомобиль</label>
+        <select class="form-control" id="quick_car" name="car" required>
+          <option value="">Сначала выберите клиента</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="quick_service">Первая услуга</label>
+        <select class="form-control" id="quick_service" name="service">
+          <option value="">Без услуги</option>
+          {% for service in services %}
+            <option value="{{ service.id }}">{{ service.name }} · {{ service.price }} ₽</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="quick_notes">Комментарий приемщика</label>
+        <textarea class="form-control" id="quick_notes" name="notes" rows="3" placeholder="Например: осмотреть ЛКП, клиент хочет комплекс, есть скол на капоте"></textarea>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn primary" type="submit">Создать заказ-наряд из приема</button>
+      <span class="muted">После создания откроется карточка заказ-наряда.</span>
+    </div>
+  </form>
+</section>
+
 <div class="grid-2">
   <section class="panel">
     <div class="panel-head">
@@ -115,4 +159,33 @@
     </table>
   </div>
 </section>
+
+<script id="quick-cars-data" type="application/json">[
+{% for car in cars %}{"id":"{{ car.id }}","customer_id":"{{ car.customer_id }}","title":"{{ car.brand|escapejs }} {{ car.model|escapejs }} — {{ car.plate|default:'без номера'|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+]</script>
+<script>
+(function () {
+  const customerSelect = document.getElementById('quick_customer');
+  const carSelect = document.getElementById('quick_car');
+  const dataEl = document.getElementById('quick-cars-data');
+  if (!customerSelect || !carSelect || !dataEl) return;
+  const cars = JSON.parse(dataEl.textContent || '[]');
+  function rebuildCars() {
+    const customerId = customerSelect.value;
+    carSelect.innerHTML = '';
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
+    carSelect.appendChild(empty);
+    cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
+      const option = document.createElement('option');
+      option.value = car.id;
+      option.textContent = car.title;
+      carSelect.appendChild(option);
+    });
+  }
+  customerSelect.addEventListener('change', rebuildCars);
+  rebuildCars();
+})();
+</script>
 {% endblock %}
