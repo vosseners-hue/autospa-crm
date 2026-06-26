@@ -125,7 +125,7 @@ class WorkOrderItemForm(StyledModelForm):
 
     class Meta:
         model = WorkOrderItem
-        fields = ['service', 'qty', 'price']
+        fields = ['service', 'qty', 'price', 'line_discount', 'comment']
 
     def clean_price(self):
         price = self.cleaned_data.get('price')
@@ -140,5 +140,5 @@ WorkOrderItemFormSet = inlineformset_factory(
     form=WorkOrderItemForm,
     extra=3,
     can_delete=True,
-    fields=['service', 'qty', 'price'],
+    fields=['service', 'qty', 'price', 'line_discount', 'comment'],
 )

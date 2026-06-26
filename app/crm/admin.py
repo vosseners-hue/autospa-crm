@@ -10,7 +10,11 @@ class ServiceMaterialInline(admin.TabularInline): model=ServiceMaterial; extra=1
 class ServiceAdmin(admin.ModelAdmin): list_display=('name','price','active'); inlines=[ServiceMaterialInline]
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin): list_display=('name','stock','unit','cost','min_stock'); search_fields=('name',)
-class WorkOrderItemInline(admin.TabularInline): model=WorkOrderItem; extra=1
+class WorkOrderItemInline(admin.TabularInline):
+    model=WorkOrderItem
+    extra=1
+    fields=('service','qty','price','line_discount','comment','total')
+    readonly_fields=('total',)
 @admin.register(WorkOrder)
 class WorkOrderAdmin(admin.ModelAdmin): list_display=('number','customer','car','status','date_in','total','materials_written_off'); inlines=[WorkOrderItemInline]; readonly_fields=('number','materials_written_off')
 @admin.register(StockMovement)

@@ -87,11 +87,16 @@ class WorkOrderItem(models.Model):
     service=models.ForeignKey(Service,on_delete=models.PROTECT, verbose_name='Услуга')
     qty=models.DecimalField('Кол-во', max_digits=10, decimal_places=2, default=1)
     price=models.DecimalField('Цена', max_digits=12, decimal_places=2)
+    line_discount=models.DecimalField('Скидка по строке', max_digits=12, decimal_places=2, default=0)
+    comment=models.CharField('Комментарий к работе', max_length=255, blank=True)
+    created_at=models.DateTimeField(auto_now_add=True, null=True)
     @property
-    def total(self): return self.qty*self.price
+    def total(self): return max((self.qty*self.price) - self.line_discount, 0)
     def save(self,*args,**kwargs):
         if not self.price and self.service_id: self.price=self.service.price
         super().save(*args,**kwargs)
+    def __str__(self):
+        return f'{self.order} — {self.service}'
 
 class StockMovement(models.Model):
     material=models.ForeignKey(Material,on_delete=models.PROTECT,related_name='movements')
