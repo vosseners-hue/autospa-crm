@@ -10,7 +10,15 @@
     <thead><tr><th>Клиент</th><th>Телефон</th><th>Мессенджер</th><th>Источник</th><th>Авто</th><th>Комментарий</th><th></th></tr></thead>
     <tbody>
       {% for c in customers %}
-      <tr><td><strong>{{ c.name }}</strong></td><td>{{ c.phone|default:"—" }}</td><td>{{ c.messenger|default:"—" }}</td><td>{{ c.source|default:"—" }}</td><td>{{ c.cars.count }}</td><td><small>{{ c.notes|default:"—" }}</small></td><td><a class="mini-btn" href="/customers/{{ c.id }}/edit/">Изменить</a></td></tr>
+      <tr>
+        <td><a href="/customers/{{ c.id }}/"><strong>{{ c.name }}</strong></a></td>
+        <td>{{ c.phone|default:"—" }}</td>
+        <td>{{ c.messenger|default:"—" }}</td>
+        <td>{{ c.source|default:"—" }}</td>
+        <td><span class="badge">{{ c.cars.count }}</span></td>
+        <td><small>{{ c.notes|default:"—" }}</small></td>
+        <td class="actions-cell"><a class="mini-btn" href="/customers/{{ c.id }}/">Карточка</a><a class="mini-btn" href="/customers/{{ c.id }}/edit/">Изменить</a></td>
+      </tr>
       {% empty %}<tr><td colspan="7" class="empty">Клиентов пока нет</td></tr>{% endfor %}
     </tbody>
   </table></div>

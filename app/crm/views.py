@@ -29,6 +29,25 @@ def dashboard(request):
 def customers(request):
     return render(request, 'crm/customers.html', {'customers': Customer.objects.prefetch_related('cars').order_by('-created_at')})
 
+
+@login_required
+def customer_detail(request, pk):
+    customer = get_object_or_404(Customer.objects.prefetch_related('cars'), pk=pk)
+    orders_qs = WorkOrder.objects.filter(customer=customer).select_related('car').prefetch_related('items__service').order_by('-date_in')
+    cars_qs = customer.cars.all().order_by('brand', 'model', 'plate')
+    total_sum = sum([o.total for o in orders_qs])
+    done_sum = sum([o.total for o in orders_qs if o.status == 'done'])
+    active_orders = orders_qs.exclude(status__in=['done', 'cancel']).count()
+    return render(request, 'crm/customer_detail.html', {
+        'customer': customer,
+        'cars': cars_qs,
+        'orders': orders_qs,
+        'orders_count': orders_qs.count(),
+        'total_sum': total_sum,
+        'done_sum': done_sum,
+        'active_orders': active_orders,
+    })
+
 @login_required
 def customer_create(request):
     if request.method == 'POST':
@@ -55,7 +74,12 @@ def cars(request):
 
 @login_required
 def car_create(request):
-    return _model_form(request, CarForm, 'Автомобиль', 'cars')
+    instance = None
+    customer_id = request.GET.get('customer')
+    if customer_id:
+        customer = get_object_or_404(Customer, pk=customer_id)
+        instance = Car(customer=customer)
+    return _model_form(request, CarForm, 'Автомобиль', 'cars', instance)
 
 @login_required
 def car_update(request, pk):
@@ -134,6 +158,19 @@ def _cars_for_order_json():
 @login_required
 def order_create(request):
     order = WorkOrder()
+    customer_id = request.GET.get('customer')
+    car_id = request.GET.get('car')
+    if customer_id:
+        try:
+            order.customer = Customer.objects.get(pk=customer_id)
+        except Customer.DoesNotExist:
+            pass
+    if car_id:
+        try:
+            order.car = Car.objects.get(pk=car_id)
+            order.customer = order.car.customer
+        except Car.DoesNotExist:
+            pass
     if request.method == 'POST':
         form = WorkOrderForm(request.POST, instance=order)
         formset = WorkOrderItemFormSet(request.POST, instance=order)
