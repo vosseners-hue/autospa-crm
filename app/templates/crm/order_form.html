@@ -1,64 +1,87 @@
 {% extends 'crm/base.html' %}
 {% block title %}{{ title }}{% endblock %}
-  <script id="cars-data" type="application/json">{{ cars_json|safe }}</script>
-  <script>
-    (function () {
-      const customerSelect = document.getElementById('id_customer');
-      const carSelect = document.getElementById('id_car');
-      const carsDataEl = document.getElementById('cars-data');
-      if (!customerSelect || !carSelect || !carsDataEl) return;
-      const cars = JSON.parse(carsDataEl.textContent || '[]');
-      const selectedCar = carSelect.value;
-
-      function rebuildCars() {
-        const customerId = customerSelect.value;
-        const oldValue = carSelect.value || selectedCar;
-        carSelect.innerHTML = '';
-        const empty = document.createElement('option');
-        empty.value = '';
-        empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
-        carSelect.appendChild(empty);
-
-        cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
-          const option = document.createElement('option');
-          option.value = car.id;
-          option.textContent = car.title;
-          if (String(car.id) === String(oldValue)) option.selected = true;
-          carSelect.appendChild(option);
-        });
-      }
-
-      customerSelect.addEventListener('change', rebuildCars);
-      rebuildCars();
-    })();
-  </script>
-{% endblock %}
 {% block content %}
-<form method="post">
+<form method="post" class="order-workspace">
   {% csrf_token %}
-  <div class="panel">
+  <script id="cars-data" type="application/json">{{ cars_json|safe }}</script>
+  <script id="services-data" type="application/json">{{ services_json|safe }}</script>
+
+  <div class="panel hero-panel">
     <div class="panel-head">
-      <h2>Данные заказ-наряда</h2>
-      <a class="btn ghost" href="{% url 'orders' %}">← Назад</a>
+      <div>
+        <p class="eyebrow">Auto Spa Detailing</p>
+        <h2>{{ title }}</h2>
+        <p class="muted">Выберите клиента, автомобиль, услуги — CRM посчитает сумму и предварительный расход материалов.</p>
+      </div>
+      <div class="actions">
+        <a class="btn ghost" href="{% url 'orders' %}">← Назад</a>
+        <button class="btn primary" type="submit">Сохранить заказ</button>
+      </div>
     </div>
-    {{ form.non_field_errors }}
-    <div class="form-grid">
-      {% for field in form %}
-        <div class="form-row">
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
-          {{ field.errors }}
+  </div>
+
+  {% if form.non_field_errors %}
+  <div class="panel danger-panel">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="grid-2 order-layout">
+    <div class="panel">
+      <div class="panel-head"><h3>Клиент и автомобиль</h3></div>
+      <div class="form-grid">
+        <div class="form-row wide">
+          <label for="{{ form.customer.id_for_label }}">{{ form.customer.label }}</label>
+          {{ form.customer }}{{ form.customer.errors }}
         </div>
-      {% endfor %}
+        <div class="form-row wide">
+          <label for="{{ form.car.id_for_label }}">{{ form.car.label }}</label>
+          {{ form.car }}{{ form.car.errors }}
+          <span class="helptext">После выбора клиента список авто автоматически отфильтруется.</span>
+        </div>
+        <div class="form-row">
+          <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+          {{ form.status }}{{ form.status.errors }}
+        </div>
+        <div class="form-row">
+          <label for="{{ form.planned_out.id_for_label }}">{{ form.planned_out.label }}</label>
+          {{ form.planned_out }}{{ form.planned_out.errors }}
+        </div>
+        <div class="form-row">
+          <label for="{{ form.discount.id_for_label }}">{{ form.discount.label }}</label>
+          {{ form.discount }}{{ form.discount.errors }}
+        </div>
+        <div class="form-row wide">
+          <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}{{ form.notes.errors }}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel sticky-summary">
+      <div class="panel-head"><h3>Итоги заказа</h3><span class="badge">live</span></div>
+      <div class="stats-row vertical">
+        <div class="stat"><span>Работы</span><strong id="summary-subtotal">0 ₽</strong></div>
+        <div class="stat"><span>Скидка</span><strong id="summary-discount">0 ₽</strong></div>
+        <div class="stat highlight"><span>Итого клиенту</span><strong id="summary-total">0 ₽</strong></div>
+        <div class="stat"><span>Материалы ориентировочно</span><strong id="summary-materials">0 ₽</strong></div>
+      </div>
+      <div class="materials-preview">
+        <h4>Предварительный расход</h4>
+        <div id="materials-preview" class="muted">Выберите услуги, чтобы увидеть материалы.</div>
+      </div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="panel-head"><h2>Работы / услуги</h2><span class="badge">можно добавить несколько строк</span></div>
+    <div class="panel-head">
+      <div><h3>Работы / услуги</h3><p class="muted">Цена подставляется автоматически, но ее можно изменить вручную.</p></div>
+      <span class="badge">несколько строк</span>
+    </div>
     {{ formset.management_form }}
+    <div class="order-items-head">
+      <span>Услуга</span><span>Кол-во</span><span>Цена</span><span>Сумма</span><span></span>
+    </div>
     {% for f in formset %}
-      <div class="formset-row">
+      <div class="formset-row order-item-row" data-order-row>
         {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
         <div>
           <label>{{ f.service.label }}</label>
@@ -72,6 +95,7 @@
           <label>{{ f.price.label }}</label>
           {{ f.price }}{{ f.price.errors }}
         </div>
+        <div class="row-total"><label>Сумма</label><strong data-row-total>0 ₽</strong></div>
         {% if f.DELETE %}
           <div class="checkbox-line"><label>Удалить</label>{{ f.DELETE }}</div>
         {% endif %}
@@ -84,36 +108,112 @@
   </div>
 </form>
 
-  <script id="cars-data" type="application/json">{{ cars_json|safe }}</script>
-  <script>
-    (function () {
-      const customerSelect = document.getElementById('id_customer');
-      const carSelect = document.getElementById('id_car');
-      const carsDataEl = document.getElementById('cars-data');
-      if (!customerSelect || !carSelect || !carsDataEl) return;
-      const cars = JSON.parse(carsDataEl.textContent || '[]');
-      const selectedCar = carSelect.value;
+<script>
+(function () {
+  const money = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits: 0}).format(value || 0) + ' ₽';
+  const num = value => parseFloat(String(value || '0').replace(',', '.')) || 0;
 
-      function rebuildCars() {
-        const customerId = customerSelect.value;
-        const oldValue = carSelect.value || selectedCar;
-        carSelect.innerHTML = '';
-        const empty = document.createElement('option');
-        empty.value = '';
-        empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
-        carSelect.appendChild(empty);
+  const customerSelect = document.getElementById('id_customer');
+  const carSelect = document.getElementById('id_car');
+  const carsDataEl = document.getElementById('cars-data');
+  const servicesDataEl = document.getElementById('services-data');
+  const cars = carsDataEl ? JSON.parse(carsDataEl.textContent || '[]') : [];
+  const services = servicesDataEl ? JSON.parse(servicesDataEl.textContent || '[]') : [];
+  const servicesMap = Object.fromEntries(services.map(service => [String(service.id), service]));
+  const selectedCar = carSelect ? carSelect.value : '';
 
-        cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
-          const option = document.createElement('option');
-          option.value = car.id;
-          option.textContent = car.title;
-          if (String(car.id) === String(oldValue)) option.selected = true;
-          carSelect.appendChild(option);
-        });
+  function rebuildCars() {
+    if (!customerSelect || !carSelect) return;
+    const customerId = customerSelect.value;
+    const oldValue = carSelect.value || selectedCar;
+    carSelect.innerHTML = '';
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = customerId ? 'Выберите автомобиль клиента' : 'Сначала выберите клиента';
+    carSelect.appendChild(empty);
+    cars.filter(car => String(car.customer_id) === String(customerId)).forEach(car => {
+      const option = document.createElement('option');
+      option.value = car.id;
+      option.textContent = car.title;
+      if (String(car.id) === String(oldValue)) option.selected = true;
+      carSelect.appendChild(option);
+    });
+  }
+
+  function updateTotals() {
+    let subtotal = 0;
+    let materialCost = 0;
+    const materialRows = new Map();
+
+    document.querySelectorAll('[data-order-row]').forEach(row => {
+      const serviceSelect = row.querySelector('select[name$="-service"]');
+      const qtyInput = row.querySelector('input[name$="-qty"]');
+      const priceInput = row.querySelector('input[name$="-price"]');
+      const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      const rowTotal = row.querySelector('[data-row-total]');
+      const service = servicesMap[String(serviceSelect ? serviceSelect.value : '')];
+      const qty = num(qtyInput && qtyInput.value) || 1;
+
+      if (service && priceInput && !priceInput.dataset.touched && !num(priceInput.value)) {
+        priceInput.value = service.price;
       }
 
-      customerSelect.addEventListener('change', rebuildCars);
-      rebuildCars();
-    })();
-  </script>
+      const price = num(priceInput && priceInput.value);
+      const deleted = deleteInput && deleteInput.checked;
+      const total = deleted ? 0 : qty * price;
+      subtotal += total;
+      if (rowTotal) rowTotal.textContent = money(total);
+
+      if (service && !deleted) {
+        (service.norms || []).forEach(norm => {
+          const key = norm.material + '|' + norm.unit;
+          const current = materialRows.get(key) || {name: norm.material, unit: norm.unit, qty: 0, cost: 0};
+          current.qty += (norm.qty || 0) * qty;
+          current.cost += (norm.qty || 0) * qty * (norm.cost || 0);
+          materialRows.set(key, current);
+          materialCost += (norm.qty || 0) * qty * (norm.cost || 0);
+        });
+      }
+    });
+
+    const discount = num(document.getElementById('id_discount') && document.getElementById('id_discount').value);
+    document.getElementById('summary-subtotal').textContent = money(subtotal);
+    document.getElementById('summary-discount').textContent = money(discount);
+    document.getElementById('summary-total').textContent = money(Math.max(subtotal - discount, 0));
+    document.getElementById('summary-materials').textContent = money(materialCost);
+
+    const preview = document.getElementById('materials-preview');
+    if (preview) {
+      if (!materialRows.size) {
+        preview.innerHTML = '<span class="muted">Для выбранных услуг нормы расхода не заданы.</span>';
+      } else {
+        preview.innerHTML = Array.from(materialRows.values()).map(row =>
+          `<div class="material-line"><span>${row.name}</span><strong>${row.qty.toFixed(3).replace(/\.000$/, '')} ${row.unit}</strong></div>`
+        ).join('');
+      }
+    }
+  }
+
+  document.addEventListener('change', event => {
+    if (event.target === customerSelect) rebuildCars();
+    if (event.target.matches('select[name$="-service"]')) {
+      const row = event.target.closest('[data-order-row]');
+      const priceInput = row && row.querySelector('input[name$="-price"]');
+      const service = servicesMap[String(event.target.value)];
+      if (priceInput && service) {
+        priceInput.value = service.price;
+        priceInput.dataset.touched = '';
+      }
+    }
+    updateTotals();
+  });
+  document.addEventListener('input', event => {
+    if (event.target.matches('input[name$="-price"]')) event.target.dataset.touched = '1';
+    updateTotals();
+  });
+
+  rebuildCars();
+  updateTotals();
+})();
+</script>
 {% endblock %}

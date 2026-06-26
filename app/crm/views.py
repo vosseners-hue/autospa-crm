@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.contrib import messages
 from django.db.models import Q
+from django.utils import timezone
+from django.utils.safestring import mark_safe
+import json
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -313,7 +316,7 @@ def orders(request):
 
 
 def _cars_for_order_json():
-    return [
+    data = [
         {
             'id': car.id,
             'customer_id': car.customer_id,
@@ -321,6 +324,27 @@ def _cars_for_order_json():
         }
         for car in Car.objects.select_related('customer').order_by('brand', 'model', 'plate')
     ]
+    return mark_safe(json.dumps(data, ensure_ascii=False))
+
+
+def _services_for_order_json():
+    data = []
+    for service in Service.objects.filter(active=True).prefetch_related('norms__material').order_by('name'):
+        data.append({
+            'id': service.id,
+            'name': service.name,
+            'price': float(service.price or 0),
+            'norms': [
+                {
+                    'material': norm.material.name,
+                    'qty': float(norm.qty or 0),
+                    'unit': norm.material.get_unit_display(),
+                    'cost': float(norm.material.cost or 0),
+                }
+                for norm in service.norms.all()
+            ],
+        })
+    return mark_safe(json.dumps(data, ensure_ascii=False))
 
 @login_required
 def order_create(request):
@@ -350,7 +374,13 @@ def order_create(request):
     else:
         form = WorkOrderForm(instance=order)
         formset = WorkOrderItemFormSet(instance=order)
-    return render(request, 'crm/order_form.html', {'form': form, 'formset': formset, 'title': 'Новый заказ-наряд', 'cars_json': _cars_for_order_json()})
+    return render(request, 'crm/order_form.html', {
+        'form': form,
+        'formset': formset,
+        'title': 'Новый заказ-наряд',
+        'cars_json': _cars_for_order_json(),
+        'services_json': _services_for_order_json(),
+    })
 
 @login_required
 def order_update(request, pk):
@@ -368,7 +398,14 @@ def order_update(request, pk):
     else:
         form = WorkOrderForm(instance=order)
         formset = WorkOrderItemFormSet(instance=order)
-    return render(request, 'crm/order_form.html', {'form': form, 'formset': formset, 'title': f'Редактирование {order.number}', 'order': order, 'cars_json': _cars_for_order_json()})
+    return render(request, 'crm/order_form.html', {
+        'form': form,
+        'formset': formset,
+        'title': f'Редактирование {order.number}',
+        'order': order,
+        'cars_json': _cars_for_order_json(),
+        'services_json': _services_for_order_json(),
+    })
 
 @login_required
 def order_delete(request, pk):
