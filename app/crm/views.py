@@ -129,6 +129,26 @@ def customer_delete(request, pk):
 def cars(request):
     return render(request, 'crm/cars.html', {'cars': Car.objects.select_related('customer').order_by('brand', 'model')})
 
+
+@login_required
+def car_detail(request, pk):
+    car = get_object_or_404(Car.objects.select_related('customer'), pk=pk)
+    orders_qs = WorkOrder.objects.filter(car=car).select_related('customer').prefetch_related('items__service').order_by('-date_in')
+    total_sum = sum([o.total for o in orders_qs])
+    done_sum = sum([o.total for o in orders_qs if o.status == 'done'])
+    active_orders = orders_qs.exclude(status__in=['done', 'cancel']).count()
+    last_order = orders_qs.first()
+    return render(request, 'crm/car_detail.html', {
+        'car': car,
+        'customer': car.customer,
+        'orders': orders_qs,
+        'orders_count': orders_qs.count(),
+        'total_sum': total_sum,
+        'done_sum': done_sum,
+        'active_orders': active_orders,
+        'last_order': last_order,
+    })
+
 @login_required
 def car_create(request):
     instance = None

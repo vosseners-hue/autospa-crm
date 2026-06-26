@@ -1,0 +1,93 @@
+{% extends "crm/base.html" %}
+{% block title %}{{ car.brand }} {{ car.model }}{% endblock %}
+{% block content %}
+<div class="top-actions" style="margin-bottom:18px">
+  <a class="btn ghost" href="/cars/">← Автомобили</a>
+  <a class="btn ghost" href="/customers/{{ customer.id }}/">Клиент</a>
+  <a class="btn ghost" href="/cars/{{ car.id }}/edit/">Изменить авто</a>
+  <a class="btn primary" href="/orders/add/?car={{ car.id }}">+ Заказ-наряд</a>
+</div>
+
+<div class="car-hero panel">
+  <div class="car-photo-card">
+    <div class="car-photo-placeholder">
+      <div class="car-icon">🚗</div>
+      <strong>{{ car.brand }} {{ car.model }}</strong>
+      <span>{{ car.plate|default:"без госномера" }}</span>
+    </div>
+  </div>
+  <div class="car-main-info">
+    <div class="panel-head" style="margin-bottom:10px">
+      <div>
+        <h2>{{ car.brand }} {{ car.model }}</h2>
+        <span class="badge">Карточка автомобиля</span>
+      </div>
+      <span class="badge">{{ car.color|default:"цвет не указан" }}</span>
+    </div>
+    <div class="detail-grid big">
+      <div><span>Владелец</span><strong><a href="/customers/{{ customer.id }}/">{{ customer.name }}</a></strong></div>
+      <div><span>Телефон</span><strong>{{ customer.phone|default:"—" }}</strong></div>
+      <div><span>Год</span><strong>{{ car.year|default:"—" }}</strong></div>
+      <div><span>Госномер</span><strong class="green">{{ car.plate|default:"—" }}</strong></div>
+      <div><span>VIN</span><strong>{{ car.vin|default:"—" }}</strong></div>
+      <div><span>Цвет</span><strong>{{ car.color|default:"—" }}</strong></div>
+      <div><span>Заказов</span><strong>{{ orders_count }}</strong></div>
+      <div><span>Активных</span><strong>{{ active_orders }}</strong></div>
+    </div>
+  </div>
+</div>
+
+<section class="stats-grid">
+  <div class="stat-card"><span>Всего заказов</span><strong>{{ orders_count }}</strong><small>по этому автомобилю</small></div>
+  <div class="stat-card accent"><span>Сумма работ</span><strong>{{ total_sum }} ₽</strong><small>за все время</small></div>
+  <div class="stat-card"><span>Выдано / закрыто</span><strong>{{ done_sum }} ₽</strong><small>закрытые заказ-наряды</small></div>
+  <div class="stat-card"><span>Последний визит</span><strong>{% if last_order %}{{ last_order.date_in|date:"d.m" }}{% else %}—{% endif %}</strong><small>{% if last_order %}{{ last_order.date_in|date:"Y H:i" }}{% else %}истории пока нет{% endif %}</small></div>
+</section>
+
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>История работ по автомобилю</h2>
+      <a class="mini-btn" href="/orders/add/?car={{ car.id }}">+ Новый заказ</a>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>№</th><th>Дата</th><th>Услуги</th><th>Статус</th><th>Сумма</th><th></th></tr></thead>
+      <tbody>
+      {% for order in orders %}
+        <tr>
+          <td><strong>{{ order.number }}</strong></td>
+          <td>{{ order.date_in|date:"d.m.Y" }}<br><small>{{ order.date_in|date:"H:i" }}</small></td>
+          <td>
+            {% for item in order.items.all %}
+              <span class="service-chip">{{ item.service.name }}</span>
+            {% empty %}
+              <span class="muted">Услуги не добавлены</span>
+            {% endfor %}
+          </td>
+          <td><span class="badge">{{ order.get_status_display }}</span></td>
+          <td><strong>{{ order.total }} ₽</strong></td>
+          <td><a class="mini-btn" href="/orders/{{ order.id }}/">Открыть</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="empty">По этому автомобилю еще нет заказ-нарядов</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>Быстрые действия</h2></div>
+    <div class="quick-actions vertical-actions">
+      <a href="/orders/add/?car={{ car.id }}">📋 Создать заказ-наряд</a>
+      <a href="/cars/{{ car.id }}/edit/">✏️ Изменить данные авто</a>
+      <a href="/customers/{{ customer.id }}/">👤 Открыть клиента</a>
+      <a href="/reception/?q={{ car.plate|default:car.vin }}">🔎 Найти в приеме</a>
+    </div>
+
+    <div class="panel" style="margin-top:18px;margin-bottom:0">
+      <h2>Заметки по авто</h2>
+      <p class="muted">Следующим этапом добавим фото “до/после”, пробег, чек-лист повреждений, гарантию по пленке/керамике и историю нанесенных составов.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

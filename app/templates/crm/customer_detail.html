@@ -38,12 +38,12 @@
       <tbody>
       {% for car in cars %}
         <tr>
-          <td><strong>{{ car.brand }} {{ car.model }}</strong></td>
+          <td><strong><a href="/cars/{{ car.id }}/">{{ car.brand }} {{ car.model }}</a></strong></td>
           <td>{{ car.year|default:"—" }}</td>
           <td>{{ car.plate|default:"—" }}</td>
           <td>{{ car.vin|default:"—" }}</td>
           <td>{{ car.color|default:"—" }}</td>
-          <td class="actions-cell"><a class="mini-btn" href="/orders/add/?car={{ car.id }}">Заказ</a><a class="mini-btn" href="/cars/{{ car.id }}/edit/">Изменить</a></td>
+          <td class="actions-cell"><a class="mini-btn" href="/cars/{{ car.id }}/">Карточка</a><a class="mini-btn" href="/orders/add/?car={{ car.id }}">Заказ</a><a class="mini-btn" href="/cars/{{ car.id }}/edit/">Изменить</a></td>
         </tr>
       {% empty %}
         <tr><td colspan="6" class="empty">Автомобили еще не добавлены</td></tr>
