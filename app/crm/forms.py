@@ -197,7 +197,7 @@ WorkOrderItemFormSet = inlineformset_factory(
     WorkOrder,
     WorkOrderItem,
     form=WorkOrderItemForm,
-    extra=3,
+    extra=1,
     can_delete=True,
     fields=['service', 'qty', 'price', 'line_discount', 'comment'],
 )
