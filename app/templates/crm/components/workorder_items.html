@@ -1,9 +1,98 @@
 {{ formset.management_form }}
 
+<style>
+.workorder-items-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.workorder-items-title{
+  display:grid;
+  grid-template-columns: 1.15fr .9fr .7fr .7fr .55fr 150px;
+  gap:16px;
+  align-items:center;
+  color:#cbd5df;
+  font-weight:800;
+  font-size:14px;
+  letter-spacing:.02em;
+  padding:0 18px 0 18px;
+  margin-bottom:8px;
+}
+
+.order-items-head{
+  display:none !important;
+}
+
+.formset-row.order-item-row{
+  display:grid !important;
+  grid-template-columns: 1.15fr .9fr .7fr .7fr .55fr 150px !important;
+  gap:16px !important;
+  align-items:end !important;
+  padding:22px !important;
+}
+
+.order-item-row label{
+  display:block;
+  margin-bottom:8px;
+  color:#cbd5df;
+  font-size:14px;
+  font-weight:800;
+}
+
+.order-item-row select,
+.order-item-row input{
+  width:100% !important;
+  min-height:46px;
+}
+
+.order-item-row .row-total{
+  min-width:90px;
+  align-self:center;
+}
+
+.order-item-row .row-total label{
+  margin-bottom:6px;
+}
+
+.order-item-row .row-total strong{
+  display:block;
+  white-space:nowrap;
+  font-size:18px;
+}
+
+.order-item-row .btn.remove-order-item{
+  width:150px;
+  min-height:46px;
+  justify-content:center;
+  align-self:center;
+  margin-top:24px;
+}
+
+@media(max-width:1200px){
+  .workorder-items-title{
+    display:none;
+  }
+  .formset-row.order-item-row{
+    grid-template-columns:1fr 1fr !important;
+  }
+  .order-item-row .btn.remove-order-item{
+    width:100%;
+  }
+}
+
+@media(max-width:700px){
+  .formset-row.order-item-row{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
 <div class="order-items-head">
   <span>Услуга</span>
-  <span>Кол-во</span>
+  <span>Исполнитель</span>
   <span>Цена</span>
+  <span>Скидка, %</span>
   <span>Сумма</span>
   <span></span>
 </div>
@@ -19,13 +108,23 @@
       </div>
 
       <div>
-        <label>{{ f.qty.label }}</label>
-        {{ f.qty }}{{ f.qty.errors }}
+        <label>Исполнитель</label>
+        <select disabled>
+          <option>Позже добавим сотрудников</option>
+        </select>
       </div>
+
+      <div style="display:none;">{{ f.qty }}</div>
+      <div style="display:none;">{{ f.line_discount }}</div>
 
       <div>
         <label>{{ f.price.label }}</label>
         {{ f.price }}{{ f.price.errors }}
+      </div>
+
+      <div>
+        <label>Скидка, %</label>
+        <input class="line-discount-percent" type="number" min="0" max="100" step="1" value="0" placeholder="0">
       </div>
 
       <div class="row-total">
@@ -34,10 +133,8 @@
       </div>
 
       {% if f.DELETE %}
-        <div class="checkbox-line">
-          <label>Удалить</label>
-          {{ f.DELETE }}
-        </div>
+        <div style="display:none;">{{ f.DELETE }}</div>
+        <button class="btn ghost danger remove-order-item" type="button">Удалить</button>
       {% endif %}
     </div>
   {% endfor %}
@@ -53,13 +150,23 @@
     </div>
 
     <div>
-      <label>{{ formset.empty_form.qty.label }}</label>
-      {{ formset.empty_form.qty }}
+      <label>Исполнитель</label>
+      <select disabled>
+        <option>Позже добавим сотрудников</option>
+      </select>
     </div>
+
+    <div style="display:none;">{{ formset.empty_form.qty }}</div>
+    <div style="display:none;">{{ formset.empty_form.line_discount }}</div>
 
     <div>
       <label>{{ formset.empty_form.price.label }}</label>
       {{ formset.empty_form.price }}
+    </div>
+
+    <div>
+      <label>Скидка, %</label>
+      <input class="line-discount-percent" type="number" min="0" max="100" step="1" value="0" placeholder="0">
     </div>
 
     <div class="row-total">
@@ -68,10 +175,8 @@
     </div>
 
     {% if formset.empty_form.DELETE %}
-      <div class="checkbox-line">
-        <label>Удалить</label>
-        {{ formset.empty_form.DELETE }}
-      </div>
+      <div style="display:none;">{{ formset.empty_form.DELETE }}</div>
+      <button class="btn ghost danger remove-order-item" type="button">Удалить</button>
     {% endif %}
   </div>
 </template>
@@ -89,13 +194,87 @@
 
   if (!addBtn || !list || !template || !totalForms) return;
 
+  const num = value => parseFloat(String(value || '0').replace(',', '.')) || 0;
+
+  function syncLineDiscount(row) {
+    const qtyInput = row.querySelector('input[name$="-qty"]');
+    const priceInput = row.querySelector('input[name$="-price"]');
+    const percentInput = row.querySelector('.line-discount-percent');
+    const discountInput = row.querySelector('input[name$="-line_discount"]');
+
+    if (qtyInput && !qtyInput.value) qtyInput.value = '1';
+    if (!percentInput || !discountInput) return;
+
+    const qty = num(qtyInput && qtyInput.value) || 1;
+    const price = num(priceInput && priceInput.value);
+    const percent = Math.min(Math.max(num(percentInput.value), 0), 100);
+    const discountAmount = (qty * price) * percent / 100;
+
+    discountInput.value = discountAmount.toFixed(2);
+  }
+
+  function prepareRow(row) {
+    const qtyInput = row.querySelector('input[name$="-qty"]');
+    const percentInput = row.querySelector('.line-discount-percent');
+    if (qtyInput && !qtyInput.value) qtyInput.value = '1';
+    if (percentInput && !percentInput.value) percentInput.value = '0';
+    syncLineDiscount(row);
+  }
+
+  document.querySelectorAll('[data-order-row]').forEach(prepareRow);
+
   addBtn.addEventListener('click', function () {
     const index = parseInt(totalForms.value, 10);
     const html = template.innerHTML.replaceAll('__prefix__', index);
     list.insertAdjacentHTML('beforeend', html);
     totalForms.value = index + 1;
 
+    const row = list.lastElementChild;
+    prepareRow(row);
+
     document.dispatchEvent(new Event('change'));
   });
+
+  list.addEventListener('click', function (event) {
+    const btn = event.target.closest('.remove-order-item');
+    if (!btn) return;
+
+    const row = btn.closest('[data-order-row]');
+    if (!row) return;
+
+    const deleteInput = row.querySelector('input[name$="-DELETE"]');
+
+    if (deleteInput) {
+      deleteInput.checked = true;
+    }
+
+    row.remove();
+
+    document.dispatchEvent(new Event('input'));
+    document.dispatchEvent(new Event('change'));
+  });
+
+  document.addEventListener('input', function (event) {
+    if (
+      event.target.matches('.line-discount-percent') ||
+      event.target.matches('input[name$="-price"]') ||
+      event.target.matches('input[name$="-qty"]')
+    ) {
+      const row = event.target.closest('[data-order-row]');
+      if (row) syncLineDiscount(row);
+    }
+  });
+
+  document.addEventListener('change', function (event) {
+    const row = event.target.closest && event.target.closest('[data-order-row]');
+    if (row) syncLineDiscount(row);
+  });
+
+  const form = list.closest('form');
+  if (form) {
+    form.addEventListener('submit', function () {
+      document.querySelectorAll('[data-order-row]').forEach(syncLineDiscount);
+    });
+  }
 })();
 </script>
