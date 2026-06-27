@@ -10,7 +10,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from .models import *
-from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet, BookingForm, VehicleInspectionForm, VehicleDamageForm, WorkOrderPhotoForm
+from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet, BookingForm, VehicleInspectionForm, VehicleDamageForm, WorkOrderPhotoForm, ServiceMaterialForm
 
 
 def _money(value):
@@ -290,6 +290,62 @@ def service_update(request, pk):
 @login_required
 def service_delete(request, pk):
     return _delete_view(request, get_object_or_404(Service, pk=pk), 'services')
+
+@login_required
+def service_materials(request, pk):
+    service = get_object_or_404(Service.objects.prefetch_related('norms__material'), pk=pk)
+    norms = service.norms.select_related('material').order_by('material__name')
+    return render(request, 'crm/service_materials.html', {
+        'service': service,
+        'norms': norms,
+    })
+
+@login_required
+def service_material_create(request, pk):
+    service = get_object_or_404(Service, pk=pk)
+    if request.method == 'POST':
+        form = ServiceMaterialForm(request.POST, service=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Материал привязан к услуге')
+            return redirect('service_materials', pk=service.pk)
+    else:
+        form = ServiceMaterialForm(service=service)
+    return render(request, 'crm/service_material_form.html', {
+        'form': form,
+        'service': service,
+        'title': 'Добавить материал к услуге',
+        'submit_label': 'Сохранить материал',
+    })
+
+@login_required
+def service_material_update(request, pk, norm_id):
+    service = get_object_or_404(Service, pk=pk)
+    norm = get_object_or_404(ServiceMaterial, pk=norm_id, service=service)
+    if request.method == 'POST':
+        form = ServiceMaterialForm(request.POST, instance=norm, service=service)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Норма расхода обновлена')
+            return redirect('service_materials', pk=service.pk)
+    else:
+        form = ServiceMaterialForm(instance=norm, service=service)
+    return render(request, 'crm/service_material_form.html', {
+        'form': form,
+        'service': service,
+        'norm': norm,
+        'title': 'Редактировать материал услуги',
+        'submit_label': 'Сохранить изменения',
+    })
+
+@login_required
+def service_material_delete(request, pk, norm_id):
+    service = get_object_or_404(Service, pk=pk)
+    norm = get_object_or_404(ServiceMaterial, pk=norm_id, service=service)
+    if request.method == 'POST':
+        norm.delete()
+        messages.success(request, 'Материал отвязан от услуги')
+    return redirect('service_materials', pk=service.pk)
 
 @login_required
 def inventory(request):

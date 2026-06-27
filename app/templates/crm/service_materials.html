@@ -1,0 +1,54 @@
+{% extends "crm/base.html" %}
+{% block title %}Материалы услуги{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card"><span>Услуга</span><strong>{{ service.name }}</strong><small>{{ service.price }} ₽</small></div>
+  <div class="stat-card accent"><span>Нормы расхода</span><strong>{{ norms|length }}</strong><small>материалов привязано</small></div>
+</section>
+
+<div class="panel">
+  <div class="panel-head">
+    <div>
+      <h2>Материалы услуги: {{ service.name }}</h2>
+      <p class="muted">Укажите расход материалов со склада на 1 выполнение этой услуги.</p>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="{% url 'services' %}">← К услугам</a>
+      <a class="btn primary" href="{% url 'service_material_create' service.pk %}">+ Добавить материал</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Материал</th>
+          <th>Расход на 1 услугу</th>
+          <th>Остаток на складе</th>
+          <th>Цена за ед.</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for norm in norms %}
+        <tr>
+          <td><strong>{{ norm.material.name }}</strong></td>
+          <td class="green">{{ norm.qty }} {{ norm.material.get_unit_display }}</td>
+          <td>{{ norm.material.stock }} {{ norm.material.get_unit_display }}</td>
+          <td>{{ norm.material.cost }} ₽</td>
+          <td>
+            <a class="mini-btn" href="{% url 'service_material_update' service.pk norm.pk %}">Изменить</a>
+            <form method="post" action="{% url 'service_material_delete' service.pk norm.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button class="mini-btn" type="submit" onclick="return confirm('Удалить материал из услуги?')">Удалить</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty">Материалы к услуге пока не привязаны</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

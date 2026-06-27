@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Customer, Car, Service, Material, StockMovement, WorkOrder, WorkOrderItem, Booking, VehicleInspection, VehicleDamage, WorkOrderPhoto
+from .models import Customer, Car, Service, ServiceMaterial, Material, StockMovement, WorkOrder, WorkOrderItem, Booking, VehicleInspection, VehicleDamage, WorkOrderPhoto
 
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -72,6 +72,27 @@ class ServiceForm(StyledModelForm):
         model = Service
         fields = ['name', 'price', 'description', 'active']
         widgets = {'description': forms.Textarea(attrs={'rows': 4})}
+
+class ServiceMaterialForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        self.service = kwargs.pop('service', None)
+        super().__init__(*args, **kwargs)
+        self.fields['material'].queryset = Material.objects.order_by('name')
+        self.fields['material'].label = 'Материал со склада'
+        self.fields['qty'].label = 'Норма расхода на 1 услугу'
+        self.fields['qty'].widget.attrs.update({'step': '0.001', 'min': '0'})
+
+    class Meta:
+        model = ServiceMaterial
+        fields = ['material', 'qty']
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.service is not None:
+            obj.service = self.service
+        if commit:
+            obj.save()
+        return obj
 
 class MaterialForm(StyledModelForm):
     class Meta:

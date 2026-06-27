@@ -28,6 +28,10 @@ urlpatterns = [
     path('services/add/', views.service_create, name='service_create'),
     path('services/<int:pk>/edit/', views.service_update, name='service_update'),
     path('services/<int:pk>/delete/', views.service_delete, name='service_delete'),
+    path('services/<int:pk>/materials/', views.service_materials, name='service_materials'),
+    path('services/<int:pk>/materials/add/', views.service_material_create, name='service_material_create'),
+    path('services/<int:pk>/materials/<int:norm_id>/edit/', views.service_material_update, name='service_material_update'),
+    path('services/<int:pk>/materials/<int:norm_id>/delete/', views.service_material_delete, name='service_material_delete'),
 
     path('inventory/', views.inventory, name='inventory'),
     path('inventory/add/', views.material_create, name='material_create'),
