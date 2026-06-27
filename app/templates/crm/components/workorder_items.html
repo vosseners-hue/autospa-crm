@@ -86,6 +86,17 @@
     grid-template-columns:1fr !important;
   }
 }
+
+.service-picker select {
+  display: none;
+}
+.service-picker {
+  position: relative;
+}
+.service-picker .service-search {
+  width: 100%;
+}
+
 </style>
 
 <div class="order-items-head">
@@ -102,9 +113,11 @@
     <div class="formset-row order-item-row" data-order-row>
       {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
 
-      <div>
+      <div class="service-picker">
         <label>{{ f.service.label }}</label>
+        <input class="service-search" type="text" placeholder="Начните вводить услугу">
         {{ f.service }}{{ f.service.errors }}
+        {{ f.custom_service_name }}
       </div>
 
       <div>
@@ -144,9 +157,11 @@
   <div class="formset-row order-item-row" data-order-row>
     {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
 
-    <div>
+    <div class="service-picker">
       <label>{{ formset.empty_form.service.label }}</label>
+      <input class="service-search" type="text" placeholder="Начните вводить услугу">
       {{ formset.empty_form.service }}
+      {{ formset.empty_form.custom_service_name }}
     </div>
 
     <div>
@@ -213,12 +228,72 @@
     discountInput.value = discountAmount.toFixed(2);
   }
 
+  function setupServicePicker(row) {
+    const wrap = row.querySelector('.service-picker');
+    if (!wrap) return;
+
+    const search = wrap.querySelector('.service-search');
+    const select = wrap.querySelector('select[name$="-service"]');
+    const custom = wrap.querySelector('input[name$="-custom_service_name"]');
+
+    if (!search || !select || !custom) return;
+
+    if (select.selectedIndex > 0) {
+      search.value = select.options[select.selectedIndex].text;
+      custom.value = '';
+    } else if (custom.value) {
+      search.value = custom.value;
+    }
+
+    const listId = select.name.replace(/[^a-zA-Z0-9_-]/g, '_') + '_datalist';
+    let datalist = document.getElementById(listId);
+
+    if (!datalist) {
+      datalist = document.createElement('datalist');
+      datalist.id = listId;
+
+      Array.from(select.options).forEach(opt => {
+        if (!opt.value) return;
+        const item = document.createElement('option');
+        item.value = opt.text.trim();
+        datalist.appendChild(item);
+      });
+
+      wrap.appendChild(datalist);
+    }
+
+    search.setAttribute('list', listId);
+
+    search.addEventListener('input', function () {
+      const typed = search.value.trim();
+      let matched = null;
+
+      Array.from(select.options).forEach(opt => {
+        if (opt.text.trim().toLowerCase() === typed.toLowerCase()) {
+          matched = opt;
+        }
+      });
+
+      if (matched) {
+        select.value = matched.value;
+        custom.value = '';
+      } else {
+        select.value = '';
+        custom.value = typed;
+      }
+
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      custom.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
   function prepareRow(row) {
     const qtyInput = row.querySelector('input[name$="-qty"]');
     const percentInput = row.querySelector('.line-discount-percent');
     if (qtyInput && !qtyInput.value) qtyInput.value = '1';
     if (percentInput && !percentInput.value) percentInput.value = '0';
     syncLineDiscount(row);
+    setupServicePicker(row);
   }
 
   document.querySelectorAll('[data-order-row]').forEach(prepareRow);

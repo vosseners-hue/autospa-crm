@@ -176,15 +176,20 @@ class WorkOrderForm(StyledModelForm):
         }
 
 class WorkOrderItemForm(StyledModelForm):
+    custom_service_name = forms.CharField(label='Услуга вручную', required=False, max_length=160)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['service'].required = False
+        self.fields['service'].empty_label = 'Выберите услугу'
         self.fields['price'].required = False
         self.fields['line_discount'].required = False
         self.fields['line_discount'].initial = 0
+        self.fields['custom_service_name'].widget = forms.HiddenInput()
 
     class Meta:
         model = WorkOrderItem
-        fields = ['service', 'qty', 'price', 'line_discount', 'comment']
+        fields = ['service', 'custom_service_name', 'qty', 'price', 'line_discount', 'comment']
 
     def clean_price(self):
         price = self.cleaned_data.get('price')
@@ -193,11 +198,22 @@ class WorkOrderItemForm(StyledModelForm):
             return service.price
         return price
 
+    def clean(self):
+        cleaned = super().clean()
+        service = cleaned.get('service')
+        custom_name = (cleaned.get('custom_service_name') or '').strip()
+        delete = cleaned.get('DELETE')
+
+        if not delete and not service and not custom_name:
+            raise forms.ValidationError('Выберите услугу из списка или введите новую вручную.')
+
+        return cleaned
+
 WorkOrderItemFormSet = inlineformset_factory(
     WorkOrder,
     WorkOrderItem,
     form=WorkOrderItemForm,
     extra=1,
     can_delete=True,
-    fields=['service', 'qty', 'price', 'line_discount', 'comment'],
+    fields=['service', 'custom_service_name', 'qty', 'price', 'line_discount', 'comment'],
 )

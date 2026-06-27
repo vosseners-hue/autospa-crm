@@ -115,6 +115,7 @@
       const serviceSelect = row.querySelector('select[name$="-service"]');
       const qtyInput = row.querySelector('input[name$="-qty"]');
       const priceInput = row.querySelector('input[name$="-price"]');
+      const lineDiscountInput = row.querySelector('input[name$="-line_discount"]');
       const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
       const rowTotal = row.querySelector('[data-row-total]');
       const service = servicesMap[String(serviceSelect ? serviceSelect.value : '')];
@@ -125,8 +126,9 @@
       }
 
       const price = num(priceInput && priceInput.value);
+      const lineDiscount = num(lineDiscountInput && lineDiscountInput.value);
       const deleted = deleteInput && deleteInput.checked;
-      const total = deleted ? 0 : qty * price;
+      const total = deleted ? 0 : Math.max((qty * price) - lineDiscount, 0);
       subtotal += total;
       if (rowTotal) rowTotal.textContent = money(total);
 
