@@ -437,12 +437,26 @@ def order_create(request):
     if request.method == 'POST':
         form = WorkOrderForm(request.POST, instance=order)
         formset = WorkOrderItemFormSet(request.POST, instance=order)
-        if form.is_valid() and formset.is_valid():
+        form_ok = form.is_valid()
+        formset_ok = formset.is_valid()
+
+        if form_ok and formset_ok:
             order = form.save()
             formset.instance = order
             formset.save()
             messages.success(request, 'Заказ-наряд создан')
             return redirect('order_detail', pk=order.pk)
+        else:
+            messages.error(request, 'Заказ-наряд не сохранен. Проверьте ошибки ниже.')
+            for field, errors in form.errors.items():
+                messages.error(request, f'Поле {field}: {errors}')
+            for error in form.non_field_errors():
+                messages.error(request, f'Ошибка формы: {error}')
+            for idx, item_form in enumerate(formset.forms, start=1):
+                if item_form.errors:
+                    messages.error(request, f'Строка услуги {idx}: {item_form.errors}')
+            for error in formset.non_form_errors():
+                messages.error(request, f'Ошибка услуг: {error}')
     else:
         form = WorkOrderForm(instance=order)
         formset = WorkOrderItemFormSet(instance=order)
@@ -460,13 +474,27 @@ def order_update(request, pk):
     if request.method == 'POST':
         form = WorkOrderForm(request.POST, instance=order)
         formset = WorkOrderItemFormSet(request.POST, instance=order)
-        if form.is_valid() and formset.is_valid():
+        form_ok = form.is_valid()
+        formset_ok = formset.is_valid()
+
+        if form_ok and formset_ok:
             order = form.save()
             formset.save()
             if order.status == 'done' and not order.materials_written_off:
                 order.write_off_materials()
             messages.success(request, 'Заказ-наряд обновлен')
             return redirect('order_detail', pk=order.pk)
+        else:
+            messages.error(request, 'Заказ-наряд не сохранен. Проверьте ошибки ниже.')
+            for field, errors in form.errors.items():
+                messages.error(request, f'Поле {field}: {errors}')
+            for error in form.non_field_errors():
+                messages.error(request, f'Ошибка формы: {error}')
+            for idx, item_form in enumerate(formset.forms, start=1):
+                if item_form.errors:
+                    messages.error(request, f'Строка услуги {idx}: {item_form.errors}')
+            for error in formset.non_form_errors():
+                messages.error(request, f'Ошибка услуг: {error}')
     else:
         form = WorkOrderForm(instance=order)
         formset = WorkOrderItemFormSet(instance=order)
