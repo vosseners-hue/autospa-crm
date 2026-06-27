@@ -179,6 +179,8 @@ class WorkOrderItemForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['price'].required = False
+        self.fields['line_discount'].required = False
+        self.fields['line_discount'].initial = 0
 
     class Meta:
         model = WorkOrderItem
