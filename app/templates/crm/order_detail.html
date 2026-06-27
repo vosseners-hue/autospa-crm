@@ -10,6 +10,7 @@
     <div class="actions">
       <a class="btn ghost" href="/orders/">Назад</a>
       <a class="btn ghost" href="/orders/{{ order.id }}/edit/">Редактировать</a>
+      <a class="btn primary" href="/orders/{{ order.id }}/inspection/">Осмотр авто</a>
       <a class="btn" target="_blank" href="/orders/{{ order.id }}/print/">Печать</a>
       {% if not order.materials_written_off %}
       <a class="btn danger" href="/orders/{{ order.id }}/writeoff/">Списать материалы</a>
@@ -70,6 +71,24 @@
       </tbody>
     </table>
   </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h3>Осмотр автомобиля</h3>
+    <a class="mini-btn" href="/orders/{{ order.id }}/inspection/">Открыть осмотр</a>
+  </div>
+  {% if inspection %}
+    <div class="detail-grid">
+      <div><span>Пробег</span><strong>{% if inspection.mileage %}{{ inspection.mileage }} км{% else %}—{% endif %}</strong></div>
+      <div><span>Топливо</span><strong>{{ inspection.get_fuel_level_display|default:"—" }}</strong></div>
+      <div><span>Повреждения</span><strong>{{ inspection.damages.count }}</strong></div>
+      <div><span>Фото</span><strong>{{ order.photos.count }}</strong></div>
+    </div>
+    {% if inspection.general_comment %}<p class="muted" style="margin-top:14px">{{ inspection.general_comment }}</p>{% endif %}
+  {% else %}
+    <p class="muted">Осмотр еще не заполнен. Нажмите «Открыть осмотр», чтобы добавить пробег, топливо, повреждения и фото.</p>
+  {% endif %}
 </div>
 
 {% if order.notes %}

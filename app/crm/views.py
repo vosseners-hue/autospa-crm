@@ -10,7 +10,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from .models import *
-from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet, BookingForm
+from .forms import CustomerForm, CustomerWithCarForm, CarForm, ServiceForm, MaterialForm, StockMovementForm, WorkOrderForm, WorkOrderItemFormSet, BookingForm, VehicleInspectionForm, VehicleDamageForm, WorkOrderPhotoForm
 
 
 def _money(value):
@@ -429,7 +429,77 @@ def order_delete(request, pk):
 
 @login_required
 def order_detail(request, pk):
-    return render(request, 'crm/order_detail.html', {'order': get_object_or_404(WorkOrder, pk=pk)})
+    order = get_object_or_404(
+        WorkOrder.objects.select_related('customer', 'car').prefetch_related('items__service', 'photos'),
+        pk=pk
+    )
+    inspection = getattr(order, 'inspection', None)
+    return render(request, 'crm/order_detail.html', {'order': order, 'inspection': inspection})
+
+@login_required
+def order_inspection(request, pk):
+    order = get_object_or_404(WorkOrder.objects.select_related('customer', 'car'), pk=pk)
+    inspection, created = VehicleInspection.objects.get_or_create(order=order)
+    damage_form = VehicleDamageForm(prefix='damage')
+    photo_form = WorkOrderPhotoForm(prefix='photo')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'save_inspection':
+            form = VehicleInspectionForm(request.POST, instance=inspection)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Осмотр автомобиля сохранен')
+                return redirect('order_inspection', pk=order.pk)
+        elif action == 'add_damage':
+            form = VehicleInspectionForm(instance=inspection)
+            damage_form = VehicleDamageForm(request.POST, prefix='damage')
+            if damage_form.is_valid():
+                damage = damage_form.save(commit=False)
+                damage.inspection = inspection
+                damage.save()
+                messages.success(request, 'Повреждение добавлено')
+                return redirect('order_inspection', pk=order.pk)
+        elif action == 'add_photo':
+            form = VehicleInspectionForm(instance=inspection)
+            photo_form = WorkOrderPhotoForm(request.POST, request.FILES, prefix='photo')
+            if photo_form.is_valid():
+                photo = photo_form.save(commit=False)
+                photo.order = order
+                photo.save()
+                messages.success(request, 'Фото добавлено')
+                return redirect('order_inspection', pk=order.pk)
+        else:
+            form = VehicleInspectionForm(instance=inspection)
+    else:
+        form = VehicleInspectionForm(instance=inspection)
+
+    return render(request, 'crm/order_inspection.html', {
+        'order': order,
+        'inspection': inspection,
+        'form': form,
+        'damage_form': damage_form,
+        'photo_form': photo_form,
+        'damages': inspection.damages.all().order_by('-created_at'),
+        'photos_before': order.photos.filter(photo_type='before').order_by('-created_at'),
+        'photos_after': order.photos.filter(photo_type='after').order_by('-created_at'),
+    })
+
+@login_required
+def order_damage_delete(request, pk, damage_id):
+    order = get_object_or_404(WorkOrder, pk=pk)
+    damage = get_object_or_404(VehicleDamage, pk=damage_id, inspection__order=order)
+    damage.delete()
+    messages.success(request, 'Повреждение удалено')
+    return redirect('order_inspection', pk=order.pk)
+
+@login_required
+def order_photo_delete(request, pk, photo_id):
+    order = get_object_or_404(WorkOrder, pk=pk)
+    photo = get_object_or_404(WorkOrderPhoto, pk=photo_id, order=order)
+    photo.delete()
+    messages.success(request, 'Фото удалено')
+    return redirect('order_inspection', pk=order.pk)
 
 @login_required
 def order_writeoff(request, pk):

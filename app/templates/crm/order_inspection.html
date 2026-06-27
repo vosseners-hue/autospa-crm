@@ -1,0 +1,27 @@
+{% extends 'crm/base.html' %}
+{% block title %}Осмотр авто{% endblock %}
+{% block content %}
+<div class="panel hero-panel">
+  <div class="panel-head">
+    <div>
+      <p class="eyebrow">Auto Spa Detailing</p>
+      <h2>Осмотр автомобиля</h2>
+      <p class="muted">{{ order.car.brand }} {{ order.car.model }} — {{ order.car.plate }}</p>
+    </div>
+    <a class="btn ghost" href="{% url 'order_detail' order.pk %}">← Назад к заказу</a>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="grid-2">
+    <div class="panel"><h3>Общий осмотр</h3>{{ inspection_form.as_p }}</div>
+    <div class="panel"><h3>Повреждения</h3>{{ damage_formset.management_form }}{% for form in damage_formset %}<div class="formset-row">{{ form.as_p }}</div>{% endfor %}</div>
+  </div>
+  <div class="panel"><h3>Фото автомобиля</h3>{{ photo_formset.management_form }}{% for form in photo_formset %}<div class="formset-row">{{ form.as_p }}</div>{% endfor %}</div>
+  <div class="top-actions">
+    <button class="btn primary" type="submit">Сохранить осмотр</button>
+    <a class="btn ghost" href="{% url 'order_detail' order.pk %}">Отмена</a>
+  </div>
+</form>
+{% endblock %}

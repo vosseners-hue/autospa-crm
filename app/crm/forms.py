@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Customer, Car, Service, Material, StockMovement, WorkOrder, WorkOrderItem, Booking
+from .models import Customer, Car, Service, Material, StockMovement, WorkOrder, WorkOrderItem, Booking, VehicleInspection, VehicleDamage, WorkOrderPhoto
 
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -101,6 +101,26 @@ class BookingForm(StyledModelForm):
             'start_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'notes': forms.Textarea(attrs={'rows': 4}),
         }
+
+
+
+class VehicleInspectionForm(StyledModelForm):
+    class Meta:
+        model = VehicleInspection
+        fields = ['mileage', 'fuel_level', 'general_comment']
+        widgets = {
+            'general_comment': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Общее состояние авто, пожелания клиента, важные замечания'}),
+        }
+
+class VehicleDamageForm(StyledModelForm):
+    class Meta:
+        model = VehicleDamage
+        fields = ['zone', 'damage_type', 'comment']
+
+class WorkOrderPhotoForm(StyledModelForm):
+    class Meta:
+        model = WorkOrderPhoto
+        fields = ['image', 'photo_type', 'comment']
 
 class WorkOrderForm(StyledModelForm):
     def __init__(self, *args, **kwargs):

@@ -1,0 +1,35 @@
+<div class="panel">
+    <div class="panel-head">
+      <div><h3>Работы / услуги</h3><p class="muted">Цена подставляется автоматически, но ее можно изменить вручную.</p></div>
+      <span class="badge">несколько строк</span>
+    </div>
+    {{ formset.management_form }}
+    <div class="order-items-head">
+      <span>Услуга</span><span>Кол-во</span><span>Цена</span><span>Сумма</span><span></span>
+    </div>
+    {% for f in formset %}
+      <div class="formset-row order-item-row" data-order-row>
+        {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+        <div>
+          <label>{{ f.service.label }}</label>
+          {{ f.service }}{{ f.service.errors }}
+        </div>
+        <div>
+          <label>{{ f.qty.label }}</label>
+          {{ f.qty }}{{ f.qty.errors }}
+        </div>
+        <div>
+          <label>{{ f.price.label }}</label>
+          {{ f.price }}{{ f.price.errors }}
+        </div>
+        <div class="row-total"><label>Сумма</label><strong data-row-total>0 ₽</strong></div>
+        {% if f.DELETE %}
+          <div class="checkbox-line"><label>Удалить</label>{{ f.DELETE }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <div class="top-actions">
+      <button class="btn primary" type="submit">Сохранить заказ</button>
+      <a class="btn ghost" href="{% url 'orders' %}">Отмена</a>
+    </div>
+  </div>
