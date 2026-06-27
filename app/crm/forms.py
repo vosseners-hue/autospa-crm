@@ -118,9 +118,25 @@ class VehicleDamageForm(StyledModelForm):
         fields = ['zone', 'damage_type', 'comment']
 
 class WorkOrderPhotoForm(StyledModelForm):
+    detail = forms.ChoiceField(label='Деталь', required=False, choices=[('', 'Без выбора')])
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['section'].required = False
+        self.fields['detail'].required = False
+        self.fields['comment'].required = False
+        self.fields['detail'].choices = [('', 'Без выбора')] + list(WorkOrderPhoto.DETAIL_CHOICES)
+        self.fields['section'].widget.attrs.update({'data-photo-section': '1'})
+        self.fields['detail'].widget.attrs.update({'data-photo-detail': '1'})
+        self.fields['comment'].widget = forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Описание можно не заполнять',
+        })
+
     class Meta:
         model = WorkOrderPhoto
-        fields = ['image', 'photo_type', 'comment']
+        fields = ['image', 'photo_type', 'section', 'detail', 'comment']
 
 class WorkOrderForm(StyledModelForm):
     def __init__(self, *args, **kwargs):

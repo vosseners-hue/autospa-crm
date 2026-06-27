@@ -481,6 +481,7 @@ def order_inspection(request, pk):
         'damage_form': damage_form,
         'photo_form': photo_form,
         'damages': inspection.damages.all().order_by('-created_at'),
+        'photos': order.photos.all().order_by('-created_at'),
         'photos_before': order.photos.filter(photo_type='before').order_by('-created_at'),
         'photos_after': order.photos.filter(photo_type='after').order_by('-created_at'),
     })

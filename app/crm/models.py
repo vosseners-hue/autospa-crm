@@ -156,9 +156,25 @@ class VehicleDamage(models.Model):
 
 class WorkOrderPhoto(models.Model):
     PHOTO_TYPE=[('before','До'),('after','После')]
+    SECTION_CHOICES=[('exterior','Экстерьер'),('interior','Интерьер')]
+    EXTERIOR_DETAIL_CHOICES=[
+        ('front_bumper','Передний бампер'),('hood','Капот'),('front_left_fender','Переднее левое крыло'),
+        ('front_right_fender','Переднее правое крыло'),('left_front_door','Левая передняя дверь'),
+        ('left_rear_door','Левая задняя дверь'),('right_front_door','Правая передняя дверь'),
+        ('right_rear_door','Правая задняя дверь'),('roof','Крыша'),('trunk','Багажник'),
+        ('rear_bumper','Задний бампер'),('wheels','Диски/колеса'),('glass','Стекла'),('other','Другое'),
+    ]
+    INTERIOR_DETAIL_CHOICES=[
+        ('front_seats','Передние сиденья'),('rear_seats','Задние сиденья'),('dashboard','Торпедо'),
+        ('steering_wheel','Руль'),('door_cards','Карты дверей'),('floor','Пол/ковры'),
+        ('ceiling','Потолок'),('trunk_interior','Багажное отделение'),('other','Другое'),
+    ]
+    DETAIL_CHOICES=EXTERIOR_DETAIL_CHOICES+INTERIOR_DETAIL_CHOICES
     order=models.ForeignKey(WorkOrder,on_delete=models.CASCADE,related_name='photos', verbose_name='Заказ-наряд')
     image=models.ImageField('Фото', upload_to='work_orders/%Y/%m/')
     photo_type=models.CharField('Тип фото', max_length=10, choices=PHOTO_TYPE, default='before')
+    section=models.CharField('Раздел', max_length=20, choices=SECTION_CHOICES, blank=True)
+    detail=models.CharField('Деталь', max_length=40, choices=DETAIL_CHOICES, blank=True)
     comment=models.CharField('Комментарий', max_length=255, blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
     def __str__(self):

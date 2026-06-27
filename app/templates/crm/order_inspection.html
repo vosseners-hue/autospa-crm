@@ -1,27 +1,208 @@
+{# app/templates/crm/order_inspection.html #}
 {% extends 'crm/base.html' %}
 {% block title %}Осмотр авто{% endblock %}
+
 {% block content %}
-<div class="panel hero-panel">
-  <div class="panel-head">
-    <div>
-      <p class="eyebrow">Auto Spa Detailing</p>
-      <h2>Осмотр автомобиля</h2>
-      <p class="muted">{{ order.car.brand }} {{ order.car.model }} — {{ order.car.plate }}</p>
-    </div>
-    <a class="btn ghost" href="{% url 'order_detail' order.pk %}">← Назад к заказу</a>
-  </div>
+<style>
+.inspection-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.inspection-panel {
+  border: 1px solid #22313d;
+  border-radius: 24px;
+  background: #101820;
+  padding: 24px;
+}
+.photo-upload-form p {
+  margin: 0 0 14px;
+}
+.photo-upload-form label {
+  display: block;
+  color: #9fb0bd;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.photo-help {
+  color: #7f909b;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: -4px 0 18px;
+}
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.photo-card {
+  border: 1px solid #22313d;
+  border-radius: 18px;
+  background: #0d151d;
+  overflow: hidden;
+}
+.photo-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #071017;
+}
+.photo-card-body {
+  padding: 14px;
+}
+.photo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.photo-tag {
+  border: 1px solid #314252;
+  border-radius: 999px;
+  color: #d9e6ee;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 9px;
+}
+.photo-tag.accent {
+  border-color: rgba(182,255,22,.55);
+  color: #b6ff16;
+}
+.photo-comment {
+  color: #c8d5dd;
+  min-height: 22px;
+  margin: 0 0 12px;
+}
+.empty-state {
+  border: 1px dashed #314252;
+  border-radius: 18px;
+  color: #8fa0ac;
+  padding: 22px;
+  text-align: center;
+}
+@media (max-width: 980px) {
+  .inspection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<div class="inspection-grid">
+  <section class="inspection-panel">
+    <h3>Добавить фото осмотра</h3>
+    <p class="photo-help">Можно загрузить только фото. Раздел, деталь и описание необязательны.</p>
+    <form method="post" enctype="multipart/form-data" class="photo-upload-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_photo">
+      {{ photo_form.as_p }}
+      <button class="btn primary" type="submit">Добавить фото</button>
+    </form>
+  </section>
+
+  <section class="inspection-panel">
+    <h3>Фото автомобиля</h3>
+    {% if photos %}
+      <div class="photo-grid">
+        {% for p in photos %}
+          <article class="photo-card">
+            <img src="{{ p.image.url }}" alt="Фото {{ order.number }}">
+            <div class="photo-card-body">
+              <div class="photo-tags">
+                <span class="photo-tag">{{ p.get_photo_type_display }}</span>
+                {% if p.section %}<span class="photo-tag accent">{{ p.get_section_display }}</span>{% endif %}
+                {% if p.detail %}<span class="photo-tag">{{ p.get_detail_display }}</span>{% endif %}
+              </div>
+              <p class="photo-comment">{% if p.comment %}{{ p.comment }}{% else %}<span class="muted">Без описания</span>{% endif %}</p>
+              <a class="btn ghost" href="{% url 'order_photo_delete' order.pk p.pk %}">Удалить</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">Фото пока не добавлены.</div>
+    {% endif %}
+  </section>
 </div>
 
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <div class="grid-2">
-    <div class="panel"><h3>Общий осмотр</h3>{{ inspection_form.as_p }}</div>
-    <div class="panel"><h3>Повреждения</h3>{{ damage_formset.management_form }}{% for form in damage_formset %}<div class="formset-row">{{ form.as_p }}</div>{% endfor %}</div>
-  </div>
-  <div class="panel"><h3>Фото автомобиля</h3>{{ photo_formset.management_form }}{% for form in photo_formset %}<div class="formset-row">{{ form.as_p }}</div>{% endfor %}</div>
-  <div class="top-actions">
-    <button class="btn primary" type="submit">Сохранить осмотр</button>
-    <a class="btn ghost" href="{% url 'order_detail' order.pk %}">Отмена</a>
-  </div>
-</form>
+{% if damages %}
+<section class="inspection-panel" style="margin-top: 24px;">
+  <h3>Ранее добавленные повреждения</h3>
+  <table style="width:100%; border-collapse:collapse;">
+    <thead>
+      <tr><th style="text-align:left; padding:12px; border-bottom:1px solid #22313d;">Зона</th><th style="text-align:left; padding:12px; border-bottom:1px solid #22313d;">Тип</th><th style="text-align:left; padding:12px; border-bottom:1px solid #22313d;">Комментарий</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for damage in damages %}
+        <tr>
+          <td style="padding:12px; border-bottom:1px solid #22313d;">{{ damage.get_zone_display }}</td>
+          <td style="padding:12px; border-bottom:1px solid #22313d;">{{ damage.get_damage_type_display }}</td>
+          <td style="padding:12px; border-bottom:1px solid #22313d;">{{ damage.comment }}</td>
+          <td style="padding:12px; border-bottom:1px solid #22313d;"><a class="btn ghost" href="{% url 'order_damage_delete' order.pk damage.pk %}">Удалить</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sectionSelect = document.querySelector('[data-photo-section]');
+  const detailSelect = document.querySelector('[data-photo-detail]');
+
+  const detailOptions = {
+    exterior: [
+      ['front_bumper', 'Передний бампер'],
+      ['hood', 'Капот'],
+      ['front_left_fender', 'Переднее левое крыло'],
+      ['front_right_fender', 'Переднее правое крыло'],
+      ['left_front_door', 'Левая передняя дверь'],
+      ['left_rear_door', 'Левая задняя дверь'],
+      ['right_front_door', 'Правая передняя дверь'],
+      ['right_rear_door', 'Правая задняя дверь'],
+      ['roof', 'Крыша'],
+      ['trunk', 'Багажник'],
+      ['rear_bumper', 'Задний бампер'],
+      ['wheels', 'Диски/колеса'],
+      ['glass', 'Стекла'],
+      ['other', 'Другое']
+    ],
+    interior: [
+      ['front_seats', 'Передние сиденья'],
+      ['rear_seats', 'Задние сиденья'],
+      ['dashboard', 'Торпедо'],
+      ['steering_wheel', 'Руль'],
+      ['door_cards', 'Карты дверей'],
+      ['floor', 'Пол/ковры'],
+      ['ceiling', 'Потолок'],
+      ['trunk_interior', 'Багажное отделение'],
+      ['other', 'Другое']
+    ]
+  };
+
+  function renderDetails() {
+    if (!sectionSelect || !detailSelect) return;
+    const currentValue = detailSelect.value;
+    const options = detailOptions[sectionSelect.value] || [];
+    detailSelect.innerHTML = '<option value="">Без выбора</option>';
+    options.forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      detailSelect.appendChild(option);
+    });
+    if (options.some(([value]) => value === currentValue)) {
+      detailSelect.value = currentValue;
+    }
+    detailSelect.disabled = options.length === 0;
+  }
+
+  if (sectionSelect && detailSelect) {
+    sectionSelect.addEventListener('change', renderDetails);
+    renderDetails();
+  }
+});
+</script>
 {% endblock %}
