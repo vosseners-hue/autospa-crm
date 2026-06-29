@@ -261,8 +261,22 @@ class WorkOrderItemForm(StyledModelForm):
         custom_name = (cleaned.get('custom_service_name') or '').strip()
         delete = cleaned.get('DELETE')
 
+        qty = cleaned.get('qty')
+        price = cleaned.get('price')
+
+        # Полностью пустую новую строку не валидируем
+        if not self.instance.pk and not service and not custom_name and not qty and price in (None, ''):
+            cleaned['DELETE'] = True
+            return cleaned
+
         if not delete and not service and not custom_name:
             raise forms.ValidationError('Выберите услугу из списка или введите новую вручную.')
+
+        if not qty:
+            cleaned['qty'] = 1
+
+        if price in (None, ''):
+            cleaned['price'] = service.price if service else 0
 
         return cleaned
 
@@ -281,8 +295,11 @@ class WorkOrderItemForm(StyledModelForm):
             )
             self.instance.service = service
 
+        if self.instance.qty in (None, ''):
+            self.instance.qty = self.cleaned_data.get('qty') or 1
+
         if self.instance.price in (None, ''):
-            self.instance.price = self.cleaned_data.get('price') or service.price or 0
+            self.instance.price = self.cleaned_data.get('price') or (service.price if service else 0) or 0
 
         return super().save(commit=commit)
 
