@@ -30,6 +30,28 @@ class CustomerWithCarForm(CustomerForm):
     class Meta(CustomerForm.Meta):
         fields = ['name', 'phone', 'messenger', 'source', 'notes', 'car_brand', 'car_model', 'car_year', 'car_plate', 'car_vin', 'car_color']
 
+    def has_changed(self):
+        if not self.is_bound:
+            return super().has_changed()
+
+        prefix = self.prefix
+
+        def posted(name):
+            return (self.data.get(f'{prefix}-{name}') or '').strip()
+
+        meaningful_fields = [
+            'service',
+            'custom_service_name',
+            'employee',
+            'comment',
+            'DELETE',
+        ]
+
+        if not self.instance.pk and not any(posted(name) for name in meaningful_fields):
+            return False
+
+        return super().has_changed()
+
     def clean(self):
         cleaned = super().clean()
         car_values = [cleaned.get('car_brand'), cleaned.get('car_model'), cleaned.get('car_year'), cleaned.get('car_plate'), cleaned.get('car_vin'), cleaned.get('car_color')]
@@ -301,10 +323,28 @@ class WorkOrderItemForm(StyledModelForm):
 
         return super().save(commit=commit)
 
+class WorkOrderItemBaseFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            cd = form.cleaned_data
+            service = cd.get('service')
+            custom_name = (cd.get('custom_service_name') or '').strip()
+            qty = cd.get('qty')
+            price = cd.get('price')
+            delete = cd.get('DELETE')
+
+            if not form.instance.pk and not delete and not service and not custom_name and not qty and price in (None, ''):
+                cd['DELETE'] = True
+
+
 WorkOrderItemFormSet = inlineformset_factory(
     WorkOrder,
     WorkOrderItem,
     form=WorkOrderItemForm,
+    formset=WorkOrderItemBaseFormSet,
     extra=1,
     can_delete=True,
     fields=['service', 'custom_service_name', 'employee', 'qty', 'price', 'line_discount', 'comment'],
