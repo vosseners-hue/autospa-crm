@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Customer, Car, Service, ServiceMaterial, Material, StockMovement, WorkOrder, WorkOrderItem, Booking, VehicleInspection, VehicleDamage, WorkOrderPhoto
+from .models import Customer, Car, Service, ServiceCategory, ServiceMaterial, Material, StockMovement, WorkOrder, WorkOrderItem, Booking, VehicleInspection, VehicleDamage, WorkOrderPhoto, Employee, SalaryScheme, SalaryDefaultSetting
 
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -68,10 +68,44 @@ class CarForm(StyledModelForm):
         fields = ['customer', 'brand', 'model', 'year', 'plate', 'vin', 'color']
 
 class ServiceForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['category'].queryset = ServiceCategory.objects.filter(active=True).order_by('sort_order','name')
+        self.fields['category'].required = False
+
     class Meta:
         model = Service
-        fields = ['name', 'price', 'description', 'active']
+        fields = ['category', 'name', 'price', 'description', 'active']
         widgets = {'description': forms.Textarea(attrs={'rows': 4})}
+
+class ServiceCategoryForm(StyledModelForm):
+    class Meta:
+        model = ServiceCategory
+        fields = ['name', 'sort_order', 'active']
+
+class EmployeeForm(StyledModelForm):
+    class Meta:
+        model = Employee
+        fields = ['full_name', 'hire_date', 'active', 'notes']
+        widgets = {
+            'hire_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 4}),
+        }
+
+class SalarySchemeForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee'].queryset = Employee.objects.filter(active=True).order_by('full_name')
+        self.fields['category'].queryset = ServiceCategory.objects.filter(active=True).order_by('sort_order','name')
+
+    class Meta:
+        model = SalaryScheme
+        fields = ['employee', 'category', 'calculation_type', 'percent', 'fixed_amount', 'active']
+
+class SalaryDefaultSettingForm(StyledModelForm):
+    class Meta:
+        model = SalaryDefaultSetting
+        fields = ['calculation_type', 'percent']
 
 class ServiceMaterialForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
@@ -86,11 +120,27 @@ class ServiceMaterialForm(StyledModelForm):
         model = ServiceMaterial
         fields = ['material', 'qty']
 
+    def clean(self):
+        cleaned = super().clean()
+        material = cleaned.get('material')
+        if self.service is not None and material and self.instance.pk:
+            exists = ServiceMaterial.objects.filter(service=self.service, material=material).exclude(pk=self.instance.pk).exists()
+            if exists:
+                self.add_error('material', 'Этот материал уже привязан к услуге. Измените существующую норму расхода.')
+        return cleaned
+
     def save(self, commit=True):
         obj = super().save(commit=False)
         if self.service is not None:
             obj.service = self.service
         if commit:
+            if self.service is not None and not obj.pk:
+                obj, _ = ServiceMaterial.objects.update_or_create(
+                    service=self.service,
+                    material=obj.material,
+                    defaults={'qty': obj.qty},
+                )
+                return obj
             obj.save()
         return obj
 
@@ -126,9 +176,14 @@ class BookingForm(StyledModelForm):
 
 
 class VehicleInspectionForm(StyledModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ['has_documents', 'has_dashboard_errors']:
+            self.fields[name].widget.attrs.pop('class', None)
+
     class Meta:
         model = VehicleInspection
-        fields = ['mileage', 'fuel_level', 'general_comment']
+        fields = ['mileage', 'fuel_level', 'has_documents', 'has_dashboard_errors', 'general_comment']
         widgets = {
             'general_comment': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Общее состояние авто, пожелания клиента, важные замечания'}),
         }
@@ -182,6 +237,8 @@ class WorkOrderItemForm(StyledModelForm):
         super().__init__(*args, **kwargs)
         self.fields['service'].required = False
         self.fields['service'].empty_label = 'Выберите услугу'
+        self.fields['employee'].queryset = Employee.objects.filter(active=True).order_by('full_name')
+        self.fields['employee'].required = False
         self.fields['price'].required = False
         self.fields['line_discount'].required = False
         self.fields['line_discount'].initial = 0
@@ -189,7 +246,7 @@ class WorkOrderItemForm(StyledModelForm):
 
     class Meta:
         model = WorkOrderItem
-        fields = ['service', 'custom_service_name', 'qty', 'price', 'line_discount', 'comment']
+        fields = ['service', 'custom_service_name', 'employee', 'qty', 'price', 'line_discount', 'comment']
 
     def clean_price(self):
         price = self.cleaned_data.get('price')
@@ -209,11 +266,28 @@ class WorkOrderItemForm(StyledModelForm):
 
         return cleaned
 
+    def save(self, commit=True):
+        custom_name = (self.cleaned_data.get('custom_service_name') or '').strip()
+        service = self.cleaned_data.get('service')
+
+        if custom_name and not service:
+            price = self.cleaned_data.get('price') or 0
+            service, _ = Service.objects.get_or_create(
+                name=custom_name,
+                defaults={
+                    'price': price,
+                    'active': True,
+                }
+            )
+            self.instance.service = service
+
+        return super().save(commit=commit)
+
 WorkOrderItemFormSet = inlineformset_factory(
     WorkOrder,
     WorkOrderItem,
     form=WorkOrderItemForm,
     extra=1,
     can_delete=True,
-    fields=['service', 'custom_service_name', 'qty', 'price', 'line_discount', 'comment'],
+    fields=['service', 'custom_service_name', 'employee', 'qty', 'price', 'line_discount', 'comment'],
 )
