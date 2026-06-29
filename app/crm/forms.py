@@ -288,18 +288,16 @@ class WorkOrderItemForm(StyledModelForm):
             price = self.cleaned_data.get('price') or 0
             service, _ = Service.objects.get_or_create(
                 name=custom_name,
-                defaults={
-                    'price': price,
-                    'active': True,
-                }
+                defaults={'price': price, 'active': True}
             )
+
+        if service:
+            self.cleaned_data['service'] = service
             self.instance.service = service
+            self.instance.service_id = service.pk
 
-        if self.instance.qty in (None, ''):
-            self.instance.qty = self.cleaned_data.get('qty') or 1
-
-        if self.instance.price in (None, ''):
-            self.instance.price = self.cleaned_data.get('price') or (service.price if service else 0) or 0
+        self.instance.qty = self.cleaned_data.get('qty') or self.instance.qty or 1
+        self.instance.price = self.cleaned_data.get('price') or self.instance.price or (service.price if service else 0) or 0
 
         return super().save(commit=commit)
 
