@@ -122,9 +122,7 @@
 
       <div>
         <label>Исполнитель</label>
-        <select disabled>
-          <option>Позже добавим сотрудников</option>
-        </select>
+        {{ f.employee }}{{ f.employee.errors }}
       </div>
 
       <div style="display:none;">{{ f.qty }}</div>
@@ -166,9 +164,7 @@
 
     <div>
       <label>Исполнитель</label>
-      <select disabled>
-        <option>Позже добавим сотрудников</option>
-      </select>
+      {{ formset.empty_form.employee }}
     </div>
 
     <div style="display:none;">{{ formset.empty_form.qty }}</div>
