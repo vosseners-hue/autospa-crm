@@ -110,6 +110,7 @@
 
 <div id="order-items-list">
   {% for f in formset %}
+    {{ f.id }}
     <div class="formset-row order-item-row" data-order-row>
       {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
 
