@@ -281,6 +281,9 @@ class WorkOrderItemForm(StyledModelForm):
             )
             self.instance.service = service
 
+        if self.instance.price in (None, ''):
+            self.instance.price = self.cleaned_data.get('price') or service.price or 0
+
         return super().save(commit=commit)
 
 WorkOrderItemFormSet = inlineformset_factory(
