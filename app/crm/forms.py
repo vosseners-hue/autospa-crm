@@ -261,21 +261,31 @@ class WorkOrderItemForm(StyledModelForm):
         self.fields['service'].empty_label = 'Выберите услугу'
         self.fields['employee'].queryset = Employee.objects.filter(active=True).order_by('full_name')
         self.fields['employee'].required = False
+        self.fields['qty'].required = False
         self.fields['price'].required = False
         self.fields['line_discount'].required = False
         self.fields['line_discount'].initial = 0
+        self.fields['custom_service_name'].required = False
         self.fields['custom_service_name'].widget = forms.HiddenInput()
 
     class Meta:
         model = WorkOrderItem
         fields = ['service', 'custom_service_name', 'employee', 'qty', 'price', 'line_discount', 'comment']
 
-    def clean_price(self):
-        price = self.cleaned_data.get('price')
-        service = self.cleaned_data.get('service')
-        if (price is None or price == 0) and service:
-            return service.price
-        return price
+    def has_changed(self):
+        if not self.is_bound or self.instance.pk:
+            return super().has_changed()
+
+        prefix = self.prefix
+
+        def posted(name):
+            return (self.data.get(f'{prefix}-{name}') or '').strip()
+
+        meaningful = ['service', 'custom_service_name', 'employee', 'comment', 'DELETE']
+        if not any(posted(name) for name in meaningful):
+            return False
+
+        return super().has_changed()
 
     def clean(self):
         cleaned = super().clean()
@@ -283,21 +293,16 @@ class WorkOrderItemForm(StyledModelForm):
         custom_name = (cleaned.get('custom_service_name') or '').strip()
         delete = cleaned.get('DELETE')
 
-        qty = cleaned.get('qty')
-        price = cleaned.get('price')
-
-        # Полностью пустую новую строку не валидируем
-        if not self.instance.pk and not service and not custom_name and not qty and price in (None, ''):
-            cleaned['DELETE'] = True
+        if delete:
             return cleaned
 
-        if not delete and not service and not custom_name:
+        if not service and not custom_name:
             raise forms.ValidationError('Выберите услугу из списка или введите новую вручную.')
 
-        if not qty:
+        if not cleaned.get('qty'):
             cleaned['qty'] = 1
 
-        if price in (None, ''):
+        if cleaned.get('price') in (None, ''):
             cleaned['price'] = service.price if service else 0
 
         return cleaned
@@ -314,30 +319,13 @@ class WorkOrderItemForm(StyledModelForm):
             )
 
         if service:
-            self.cleaned_data['service'] = service
             self.instance.service = service
             self.instance.service_id = service.pk
 
-        self.instance.qty = self.cleaned_data.get('qty') or self.instance.qty or 1
-        self.instance.price = self.cleaned_data.get('price') or self.instance.price or (service.price if service else 0) or 0
+        self.instance.qty = self.cleaned_data.get('qty') or 1
+        self.instance.price = self.cleaned_data.get('price') or (service.price if service else 0) or 0
 
         return super().save(commit=commit)
-
-class WorkOrderItemBaseFormSet(forms.BaseInlineFormSet):
-    def clean(self):
-        super().clean()
-        for form in self.forms:
-            if not hasattr(form, 'cleaned_data'):
-                continue
-            cd = form.cleaned_data
-            service = cd.get('service')
-            custom_name = (cd.get('custom_service_name') or '').strip()
-            qty = cd.get('qty')
-            price = cd.get('price')
-            delete = cd.get('DELETE')
-
-            if not form.instance.pk and not delete and not service and not custom_name and not qty and price in (None, ''):
-                cd['DELETE'] = True
 
 
 WorkOrderItemFormSet = inlineformset_factory(
